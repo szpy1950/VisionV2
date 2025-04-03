@@ -113,7 +113,6 @@ def extract_puzzle_pieces(image_path):
     ### extraction every time
     print("Analyzing edges of pieces using Harris Corner Detection")
     for idx, contour in enumerate(contours[:test_number]):
-
         # Extract individual piece
         x, y, w, h = cv2.boundingRect(contour)
         mask = np.zeros_like(gray_image)
@@ -121,34 +120,44 @@ def extract_puzzle_pieces(image_path):
 
         piece = np.zeros_like(original_image)
         piece[mask == 255] = original_image[mask == 255]
-        cropped_piece = piece[y:y + h, x:x + w]  # Crop to bounding box
+        cropped_piece = piece[y:y + h, x:x + w]
+        mask_cropped = mask[y:y + h, x:x + w]
 
-        # Convert to grayscale for Harris
+        # Harris detection only on the piece mask
         gray_piece = cv2.cvtColor(cropped_piece, cv2.COLOR_BGR2GRAY)
         gray_piece = np.float32(gray_piece)
 
-        # Apply Harris Corner Detection
-        harris_corners = cv2.cornerHarris(gray_piece, blockSize=2, ksize=3, k=0.04)
-        harris_corners = cv2.dilate(harris_corners, None)  # Enhance corner points
+        # Create a masked version of the grayscale piece
+        # This ensures Harris only processes the actual piece
+        masked_gray_piece = gray_piece.copy()
+        masked_gray_piece[mask_cropped == 0] = 0
 
-        # Mark the strongest corners (threshold-based)
-        threshold = 0.02 * harris_corners.max()
+        # Apply Harris corner detection
+        harris_corners = cv2.cornerHarris(masked_gray_piece, blockSize=5, ksize=3, k=0.06)
+        harris_corners = cv2.dilate(harris_corners, None)
+
+        # Focus on the mask edges by zeroing out non-edge areas
+        # Create edge mask from the piece mask
+        edge_kernel = np.ones((3, 3), np.uint8)
+        edges = cv2.Canny(mask_cropped, 100, 200)
+
+        # Only keep corner responses near edges
+        edge_dilated = cv2.dilate(edges, edge_kernel, iterations=2)
+        harris_corners[edge_dilated == 0] = 0
+
+        # Find corner points above threshold
+        threshold = 0.01 * harris_corners.max()
         corner_points = np.argwhere(harris_corners > threshold)
 
-        # Convert to (x, y) format
-        detected_corners = [(x + cx, y + cy) for cy, cx in corner_points]
+        # Convert to original image coordinates
+        detected_corners = [(cx, cy) for cy, cx in corner_points]
 
-        # Keep only 4 strongest corners
-        if len(detected_corners) > 4:
-            detected_corners = sorted(detected_corners, key=lambda p: harris_corners[p[1] - y, p[0] - x], reverse=True)[
-                               :4]
-
-        # Draw pink contour (1px, no anti-aliasing)
+        # Draw pink contour
         cv2.drawContours(cropped_piece, [contour - [x, y]], -1, (255, 0, 255), 1, lineType=cv2.LINE_8)
 
-        # Draw green detected corners
+        # Draw ALL detected corners
         for corner in detected_corners:
-            cv2.circle(cropped_piece, (corner[0] - x, corner[1] - y), 2, (0, 255, 0), -1)
+            cv2.circle(cropped_piece, corner, 1, (255, 0, 0), -1)
 
         # Save the processed image
         corner_path = os.path.join(output_corner_folder, f"corner_piece_{idx + 1}.png")
