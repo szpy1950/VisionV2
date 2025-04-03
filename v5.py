@@ -109,6 +109,11 @@ def extract_puzzle_pieces(image_path):
     test_number = 24
 
 
+    """
+        EDGE AND CORNER DETECTION
+    """
+
+
     ### separated part because I want to put it in a different file later, i dont want to redo the whole piece
     ### extraction every time
     print("Analyzing edges of pieces using Harris Corner Detection")
