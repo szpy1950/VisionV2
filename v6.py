@@ -62,21 +62,14 @@ def extract_puzzle_pieces(image_path):
     cv2.drawContours(contour_image, contours, -1, (0, 255, 0), 2)
     display_image("Detected Pieces", contour_image)
 
-    output_folder_pieces = "images/extracted_pieces"
-    os.makedirs(output_folder_pieces, exist_ok=True)
-
     output_folder_contours = "images/extracted_contours"
     os.makedirs(output_folder_contours, exist_ok=True)
-
 
     print("Extracting individual parts into piece images")
 
     piece_images = []
     output_folder_pieces = "images/extracted_pieces"
     os.makedirs(output_folder_pieces, exist_ok=True)
-
-    output_folder_contours = "images/extracted_contours"
-    os.makedirs(output_folder_contours, exist_ok=True)
 
     for i, contour in enumerate(contours):
         mask = np.zeros_like(gray_image)
@@ -127,55 +120,47 @@ def extract_puzzle_pieces(image_path):
         if i >= 10:
             break
 
+
+        # 1 ) get the pieces contour
+
         mask = np.zeros_like(gray_image)
         cv2.drawContours(mask, [contour], 0, 255, -1)
 
         piece = np.zeros_like(original_image)
         piece[mask == 255] = original_image[mask == 255]
-
         x, y, w, h = cv2.boundingRect(contour)
         cropped_piece = piece[y:y + h, x:x + w]
         piece_images.append(cropped_piece)
 
-        # Save original piece
         piece_path = os.path.join(output_folder_pieces, f"piece_{i + 1}.png")
         cv2.imwrite(piece_path, cropped_piece)
-
-        # Create a copy to draw on for visualization
         contour_piece = cropped_piece.copy()
 
-        # Find the centroid of the piece
+
+
+        # 2)  get each contour center
         M = cv2.moments(contour)
         if M["m00"] == 0:
-            continue  # Skip if contour has zero area
-
+            continue
         centroid_x = int(M["m10"] / M["m00"])
         centroid_y = int(M["m01"] / M["m00"])
-
-        # Draw the centroid (red)
         cv2.circle(contour_piece, (centroid_x - x, centroid_y - y), 5, (0, 0, 255), -1)
 
-        # Extract contour points
-        contour_points = contour - np.array([x, y])
 
-        # Calculate distance from centroid to each contour point
+        # 3) get the angle for each point on the contour
+        contour_points = contour - np.array([x, y])
         distances = []
         angles = []
 
         for point in contour:
             px, py = point[0]
-            # Calculate distance (vector norm)
             dx = px - centroid_x
             dy = py - centroid_y
             distance = np.sqrt(dx ** 2 + dy ** 2)
-
-            # Calculate angle
             angle = np.arctan2(dy, dx)
-
             distances.append(distance)
             angles.append(angle)
 
-        # Convert angles to degrees and normalize from 0 to 360
         angles_deg = np.array([(a * 180 / np.pi) % 360 for a in angles])
 
         # Sort points by angle
@@ -195,7 +180,7 @@ def extract_puzzle_pieces(image_path):
         # Check each peak based on the values at ±5 degrees
         angle_window = 5  # Check points at ±5 degrees
         min_height_diff = 5  # Minimum height difference to consider a peak as sharp
-        min_distance_threshold = 80  # Minimum distance from centroid to consider a peak
+        min_distance_threshold = 75  # Minimum distance from centroid to consider a peak
 
         # Store all indices for plotting
         sharp_peak_indices = []
