@@ -414,13 +414,14 @@ for contours_indices in range(len(contours)):
 
     # In[132]:
 
+    resize_factor = 0.8
 
     def exists_minima_between(a,b,min_indices):
         if b < a:
             for p in min_indices:
                 if p > a or p < b:
                     # hack to set distance smaller than custom threshold
-                    if distances[p] < ((max(distances[a], distances[b])*0.9 ) /1.41):
+                    if distances[p] < ((max(distances[a], distances[b])*resize_factor ) /1.41):
                         print(f"Found minima {p}")
                         return True
                     else:
@@ -429,7 +430,7 @@ for contours_indices in range(len(contours)):
         else:
             for p in min_indices:
                 if p > a and p < b:
-                    if distances[p] < ((max(distances[a], distances[b])*0.9 ) /1.41):
+                    if distances[p] < ((max(distances[a], distances[b])*resize_factor ) /1.41):
                         print(f"Found minima {p}")
                         return True
                     else:
