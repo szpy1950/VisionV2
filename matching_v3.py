@@ -13,8 +13,6 @@ from scipy.signal import savgol_filter
 from scipy.ndimage import gaussian_filter1d
 import pandas as pd
 import math
-import bisect
-
 
 # ### Default image path
 image_path = "images/hack2.png"
@@ -48,7 +46,7 @@ gray_image = cv2.cvtColor(original_image, cv2.COLOR_BGR2GRAY)
 # display_image("Grayscale Image", gray_image)
 
 
-print("Threshold to separate pieces from background")
+# print("Threshold to separate pieces from background")
 _, binary_image = cv2.threshold(gray_image, 30, 255, cv2.THRESH_BINARY)
 # display_image("Binary Image", binary_image)
 
@@ -143,6 +141,33 @@ for i, contour in enumerate(contours):
                      cv2.LINE_8)  # Pink, width 1, no anti-aliasing
     contour_path = os.path.join(output_folder_contours, f"contour_{i + 1}.png")
     cv2.imwrite(contour_path, contour_piece)
+
+
+    # In[100]:
+
+class Edge:
+    def __init__(self, edge_type, left_corner, right_corner):
+        self.edge_type = edge_type
+        self.left_corner = left_corner
+        self.right_corner = right_corner
+
+
+class puzzlePiece:
+    def __init__(self, piece_id, contour, peaks_ids, center, angles, distances):
+        self.piece_id = piece_id
+        self.contour = contour
+        self.corners = peaks_ids
+        self.center = center
+        self.contour_polar = (angles, distances)
+        self.edges = []
+
+    def __repr__(self):
+        ret = ""
+        ret += f"{self.piece_id}\n"
+        ret += f"Contour: {len(self.contour)}\n"
+        ret += f"Corners: {self.corners}\n"
+
+        return ret
 
 
 
@@ -250,7 +275,7 @@ for contours_indices in range(len(contours)):
                 break
 
             if remaining_peak_distances[k] <= min_distances_avg:
-                print("removing a bottom peak")
+                # print("removing a bottom peak")
                 remaining_peak_indices.pop(k)
                 remaining_peak_angles.pop(k)
                 remaining_peak_distances.pop(k)
@@ -346,33 +371,17 @@ for contours_indices in range(len(contours)):
     os.makedirs(output_plots_folder, exist_ok=True)
     plt.savefig(os.path.join(output_plots_folder, f"plot_{selected_image_index + 1}.png"))
 
+    plt.close()
+
     # Print pointiness scores for all peaks
-    for i, (angle, distance, score) in enumerate(zip(peak_angles, peak_distances, pointiness_scores)):
-        print(f"Peak {i+1}: Angle = {angle:.2f}°, Distance = {distance:.2f}, Pointiness = {score:.2f}")
-    print("\nTop 4 pointiest peaks:")
-    for i, idx in enumerate(top_4_indices):
-        print(f"Peak {idx+1}: Angle = {peak_angles[idx]:.2f}°, Distance = {peak_distances[idx]:.2f}, Pointiness = {pointiness_scores[idx]:.2f}")
+    # for i, (angle, distance, score) in enumerate(zip(peak_angles, peak_distances, pointiness_scores)):
+    #     print(f"Peak {i+1}: Angle = {angle:.2f}°, Distance = {distance:.2f}, Pointiness = {score:.2f}")
+    # print("\nTop 4 pointiest peaks:")
+    # for i, idx in enumerate(top_4_indices):
+    #     print(f"Peak {idx+1}: Angle = {peak_angles[idx]:.2f}°, Distance = {peak_distances[idx]:.2f}, Pointiness = {pointiness_scores[idx]:.2f}")
 
 
     # In[130]:
-
-
-    class puzzlePiece:
-        def __init__(self, piece_id, contour, peaks_ids, center, angles, distances):
-            self.piece_id = piece_id
-            self.contour = contour
-            self.corners = peaks_ids
-            self.center = center
-            self.contour_polar = (angles, distances)
-            self.edges = []
-
-        def __repr__(self):
-            ret = ""
-            ret += f"{self.piece_id}\n"
-            ret += f"Contour: {len(self.contour)}\n"
-            ret += f"Corners: {self.corners}\n"
-
-            return ret
 
     puzzle_pieces_holder = {}
 
@@ -385,7 +394,7 @@ for contours_indices in range(len(contours)):
         distances
     )
 
-    print(this_piece)
+    # print(this_piece)
 
 
     # ## Edge type detection
@@ -397,16 +406,16 @@ for contours_indices in range(len(contours)):
         if b < a:
             for p in peak_indices:
                 if p > a or p < b:
-                    print(f"Found maxima {p}")
+                    # print(f"Found maxima {p}")
                     return True
 
         else:
             for p in peak_indices:
                 if p > a and p < b:
-                    print(f"Found maxima {p}")
+                    # print(f"Found maxima {p}")
                     return True
 
-            print("no peak between")
+            # print("no peak between")
             return False
 
 
@@ -420,7 +429,7 @@ for contours_indices in range(len(contours)):
                 if p > a or p < b:
                     # hack to set distance smaller than custom threshold
                     if distances[p] < ((max(distances[a], distances[b])*resize_factor ) /1.41):
-                        print(f"Found minima {p}")
+                        # print(f"Found minima {p}")
                         return True
                     else:
                         return False
@@ -429,12 +438,12 @@ for contours_indices in range(len(contours)):
             for p in min_indices:
                 if p > a and p < b:
                     if distances[p] < ((max(distances[a], distances[b])*resize_factor ) /1.41):
-                        print(f"Found minima {p}")
+                        # print(f"Found minima {p}")
                         return True
                     else:
                         return False
 
-            print("no min between")
+            # print("no min between")
             return False
 
 
@@ -442,15 +451,15 @@ for contours_indices in range(len(contours)):
 
 
     edge_types = {0: "FLAT", 1: "IN", 2: "OUT"}
-    print(all_min_indices)
+    # print(all_min_indices)
 
     def get_edge_type(a, b):
-        print("-----")
-        print(a, b)
-        print(angles_deg[a], angles_deg[b])
-
-        print(remaining_indices)
-        print([angles_deg[r] for r in remaining_indices])
+        # print("-----")
+        # print(a, b)
+        # print(angles_deg[a], angles_deg[b])
+        #
+        # print(remaining_indices)
+        # print([angles_deg[r] for r in remaining_indices])
         if exists_peak_between(a, b, remaining_indices):
             return 2
         else:
@@ -483,14 +492,14 @@ for contours_indices in range(len(contours)):
 
     this_piece.edges = edges
 
-    print(edges)
+    # print(edges)
 
 
     # In[136]:
 
 
-    for edge_id, start_idx, end_idx, edge_type in edges:
-        print(angles_deg[start_idx], angles_deg[end_idx])
+    # for edge_id, start_idx, end_idx, edge_type in edges:
+    #     print(angles_deg[start_idx], angles_deg[end_idx])
 
 
 
