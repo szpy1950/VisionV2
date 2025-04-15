@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import os
 from scipy.signal import find_peaks
 
+
 def display_image(title, image):
     plt.figure(figsize=(8, 8))
     plt.title(title)
