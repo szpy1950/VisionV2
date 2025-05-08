@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[656]:
+# In[1603]:
 
 
 import cv2
@@ -15,13 +15,13 @@ import pandas as pd
 import math
 
 
-# In[657]:
+# In[1604]:
 
 
 image_path = "images/hack2.png"
 
 
-# In[658]:
+# In[1605]:
 
 
 def display_image(title, image):
@@ -35,7 +35,7 @@ def display_image(title, image):
     plt.show()
 
 
-# In[659]:
+# In[1606]:
 
 
 # ## Basic reading image and display
@@ -45,7 +45,7 @@ if original_image is None:
     raise ValueError(f"Could not read image from {image_path}")
 
 
-# In[660]:
+# In[1607]:
 
 
 # ## Grayscale conversion
@@ -54,7 +54,7 @@ gray_image = cv2.cvtColor(original_image, cv2.COLOR_BGR2GRAY)
 # display_image("Grayscale Image", gray_image)
 
 
-# In[661]:
+# In[1608]:
 
 
 # print("Threshold to separate pieces from background")
@@ -62,7 +62,7 @@ _, binary_image = cv2.threshold(gray_image, 30, 255, cv2.THRESH_BINARY)
 # display_image("Binary Image", binary_image)
 
 
-# In[662]:
+# In[1609]:
 
 
 kernel = np.ones((12, 12), np.uint8)
@@ -74,7 +74,7 @@ morph_image = cv2.morphologyEx(morph_image, cv2.MORPH_OPEN, kernel)
 # display_image("Morph Operations", morph_image)
 
 
-# In[663]:
+# In[1610]:
 
 
 # print("Filling holes in puzzle pieces")
@@ -84,7 +84,7 @@ for cnt in contours_fill:
 # display_image("Filled Holes", morph_image)
 
 
-# In[664]:
+# In[1611]:
 
 
 # ## Contours finding
@@ -92,7 +92,7 @@ contours, _ = cv2.findContours(morph_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_
 # print(f"Found {len(contours)} potential puzzle pieces")
 
 
-# In[665]:
+# In[1612]:
 
 
 # print("Filtering contours by size")
@@ -103,7 +103,7 @@ if len(contours) > 1:
 # print(f"After filtering: {len(contours)} puzzle pieces")
 
 
-# In[666]:
+# In[1613]:
 
 
 # print("Drawing contours of the original image")
@@ -111,7 +111,7 @@ contour_image = original_image.copy()
 # cv2.drawContours(contour_image, contours, -1, (0, 255, 0), 2)
 
 
-# In[667]:
+# In[1614]:
 
 
 output_folder_pieces = "images/extracted_pieces"
@@ -146,7 +146,7 @@ output_tests = "images/tests"
 os.makedirs(output_tests, exist_ok=True)
 
 
-# In[668]:
+# In[1615]:
 
 
 class Edge:
@@ -161,7 +161,7 @@ class Edge:
         self.color_edge_line = None
 
 
-# In[669]:
+# In[1616]:
 
 
 class puzzlePiece:
@@ -209,7 +209,7 @@ class puzzlePiece:
         return ret
 
 
-# In[670]:
+# In[1617]:
 
 
 class Puzzle:
@@ -223,13 +223,13 @@ class Puzzle:
         self.middle_pieces = []
 
 
-# In[671]:
+# In[1618]:
 
 
 my_puzzle = Puzzle()
 
 
-# In[672]:
+# In[1619]:
 
 
 for contours_indices in range(len(contours)):
@@ -563,7 +563,7 @@ for contours_indices in range(len(contours)):
     my_puzzle.all_pieces[selected_image_index] = this_piece
 
 
-# In[673]:
+# In[1620]:
 
 
 print("----------- STATS ---------- ")
@@ -577,7 +577,7 @@ print("Middles: ", my_puzzle.middle_pieces)
 
 # ## Algorithm to find the puzzle size
 
-# In[674]:
+# In[1621]:
 
 
 def find_puzzle_size(total, corners, borders, middles):
@@ -592,7 +592,7 @@ def find_puzzle_size(total, corners, borders, middles):
     return None
 
 
-# In[675]:
+# In[1622]:
 
 
 puzzle_r, puzzle_c = find_puzzle_size(len(my_puzzle.all_pieces), len(my_puzzle.corners_pieces), len(my_puzzle.borders_pieces), len(my_puzzle.middle_pieces))
@@ -600,7 +600,7 @@ print(puzzle_r)
 print(puzzle_c)
 
 
-# In[676]:
+# In[1623]:
 
 
 def display_image_cv2(title, image):
@@ -622,7 +622,7 @@ def display_image_cv2(title, image):
     cv2.destroyAllWindows()
 
 
-# In[677]:
+# In[1624]:
 
 
 # target_index = 5
@@ -633,7 +633,7 @@ def display_image_cv2(title, image):
 # 
 # pieces with a straight edge -> y axis orientation
 
-# In[678]:
+# In[1625]:
 
 
 # Create a new white canvas to place all oriented pieces
@@ -656,7 +656,7 @@ max_height_in_row = 0
 piece_count = 0
 
 
-# In[679]:
+# In[1626]:
 
 
 class Canvas:
@@ -949,7 +949,7 @@ class Canvas:
         return None
 
 
-# In[680]:
+# In[1627]:
 
 
 # First process and reorient all pieces
@@ -1154,7 +1154,7 @@ for index in (my_puzzle.borders_pieces + my_puzzle.corners_pieces):
 print("All pieces oriented and processed!")
 
 
-# In[681]:
+# In[1628]:
 
 
 # Create a canvas object with custom spacing
@@ -1175,7 +1175,7 @@ canvas_obj.save(canvas_path)
 print(f"Canvas saved to {canvas_path}")
 
 
-# In[682]:
+# In[1629]:
 
 
 # Edge matching function to compute a matching score between two puzzle piece edges
@@ -1199,22 +1199,66 @@ def compute_edge_matching_score(piece1, edge1_idx, piece2, edge2_idx, debug=Fals
         return 0
 
 
-    # Check if both pieces are border pieces (have at least one flat edge)
-    piece1_has_flat = any(edge[3] == 0 for edge in piece1.edges)
-    piece2_has_flat = any(edge[3] == 0 for edge in piece2.edges)
+    # Check if pieces are border or corner pieces (have at least one flat edge)
+    piece1_flat_edges = [i for i, edge in enumerate(piece1.edges) if edge[3] == 0]
+    piece2_flat_edges = [i for i, edge in enumerate(piece2.edges) if edge[3] == 0]
 
-    # If both are border pieces, check if the current edges are opposite to flat edges
-    if piece1_has_flat and piece2_has_flat:
-        # Find the flat edge indices
-        flat_edge1_idx = next((i for i, edge in enumerate(piece1.edges) if edge[3] == 0), None)
-        flat_edge2_idx = next((i for i, edge in enumerate(piece2.edges) if edge[3] == 0), None)
+    piece1_is_border = len(piece1_flat_edges) == 1
+    piece1_is_corner = len(piece1_flat_edges) == 2
+    piece2_is_border = len(piece2_flat_edges) == 1
+    piece2_is_corner = len(piece2_flat_edges) == 2
+
+    # Only apply the "opposite to flat edge" restriction for border pieces, not corners
+    if (piece1_is_border and piece2_is_border):
+        # For border pieces: check if current edge is opposite to the flat edge
+        flat_edge1_idx = piece1_flat_edges[0] if piece1_flat_edges else None
+        flat_edge2_idx = piece2_flat_edges[0] if piece2_flat_edges else None
 
         # Check if current edge is opposite to a flat edge (2 positions away in clockwise order)
         if (flat_edge1_idx is not None and (edge1_idx == (flat_edge1_idx + 2) % 4)) or \
            (flat_edge2_idx is not None and (edge2_idx == (flat_edge2_idx + 2) % 4)):
             if debug:
-                print(f"Edge {edge1_idx} of piece {piece1.piece_id} or edge {edge2_idx} of piece {piece2.piece_id} is opposite to a flat edge. Score = 0")
+                print(f"Edge {edge1_idx} of piece {piece1.piece_id} or edge {edge2_idx} of piece {piece2.piece_id} is opposite to a flat edge on a border piece. Score = 0")
             return 0
+
+    # For corner pieces, we need different rules
+    if piece1_is_corner or piece2_is_corner:
+        # If either piece is a corner, we need to make sure we're not trying to match
+        # an edge that's adjacent to two flat edges with an edge that needs non-flat neighbors
+
+        # For piece1, if it's a corner, check if the current edge is between two flat edges
+        if piece1_is_corner:
+            edge1_prev_idx = (edge1_idx - 1) % 4
+            edge1_next_idx = (edge1_idx + 1) % 4
+
+            # If both adjacent edges are flat, this edge can only match with specific edges
+            if edge1_prev_idx in piece1_flat_edges and edge1_next_idx in piece1_flat_edges:
+                # This edge is between two flat edges - it can only match with a similar edge
+                # or an edge that doesn't require flat neighbors
+                if piece2_is_corner:
+                    edge2_prev_idx = (edge2_idx - 1) % 4
+                    edge2_next_idx = (edge2_idx + 1) % 4
+
+                    # If the other edge isn't between two flat edges, they can't match
+                    if not (edge2_prev_idx in piece2_flat_edges and edge2_next_idx in piece2_flat_edges):
+                        if debug:
+                            print(f"Corner piece {piece1.piece_id} edge {edge1_idx} is between two flat edges, but corner piece {piece2.piece_id} edge {edge2_idx} is not. Score = 0")
+                        return 0
+
+        # Same check for piece2
+        if piece2_is_corner:
+            edge2_prev_idx = (edge2_idx - 1) % 4
+            edge2_next_idx = (edge2_idx + 1) % 4
+
+            if edge2_prev_idx in piece2_flat_edges and edge2_next_idx in piece2_flat_edges:
+                if piece1_is_corner:
+                    edge1_prev_idx = (edge1_idx - 1) % 4
+                    edge1_next_idx = (edge1_idx + 1) % 4
+
+                    if not (edge1_prev_idx in piece1_flat_edges and edge1_next_idx in piece1_flat_edges):
+                        if debug:
+                            print(f"Corner piece {piece2.piece_id} edge {edge2_idx} is between two flat edges, but corner piece {piece1.piece_id} edge {edge1_idx} is not. Score = 0")
+                        return 0
 
     # Check if adjacent edges match for border pieces
     # For piece1: adjacent edges are (edge1_idx-1)%4 and (edge1_idx+1)%4
@@ -1306,13 +1350,58 @@ def compute_edge_matching_score(piece1, edge1_idx, piece2, edge2_idx, debug=Fals
 
     # Function to get color at a point and slightly inside the piece
     # Replace the get_color_at_point function in compute_edge_matching_score with this improved version
-    def get_color_at_point(piece, point, inward_offset=20):
+    def get_color_at_point(piece, point, inward_offset=0):
         x, y = point[0]
 
         # Calculate piece center
         cx, cy = piece.absolute_center
 
         # [Same logic to calculate dx, dy as before]
+        contour = piece.absolute_contour
+        idx = None
+
+        # Find the index of the current point in the contour
+        for i, pt in enumerate(contour):
+            if np.array_equal(pt[0], [x, y]):
+                idx = i
+                break
+
+        if idx is None:
+            # If point not found, use center-based approach as fallback
+            dx, dy = cx - x, cy - y
+            length = np.sqrt(dx**2 + dy**2)
+            if length > 0:
+                dx, dy = dx/length, dy/length
+            else:
+                return np.array([0, 0, 0]), (x, y)  # Default color if at center
+        else:
+            # Get points before and after
+            prev_idx = (idx - 1) % len(contour)
+            next_idx = (idx + 1) % len(contour)
+
+            prev_pt = contour[prev_idx][0]
+            next_pt = contour[next_idx][0]
+
+            # Calculate tangent vector (average of vectors to prev and next points)
+            tangent_x = next_pt[0] - prev_pt[0]
+            tangent_y = next_pt[1] - prev_pt[1]
+
+            # Normalize
+            tangent_length = np.sqrt(tangent_x**2 + tangent_y**2)
+            if tangent_length > 0:
+                tangent_x /= tangent_length
+                tangent_y /= tangent_length
+
+            # Perpendicular vector (inward direction for counter-clockwise contour)
+            # For counter-clockwise contour, inward is to the right of tangent
+            dx = -tangent_y  # Perpendicular and inward
+            dy = tangent_x
+
+            # Verify direction is inward (should point towards center)
+            # If not, flip the direction
+            if (dx * (cx - x) + dy * (cy - y)) < 0:
+                dx = -dx
+                dy = -dy
 
         # Calculate point slightly inside the piece
         inside_x = int(x + dx * inward_offset)
@@ -1343,12 +1432,21 @@ def compute_edge_matching_score(piece1, edge1_idx, piece2, edge2_idx, debug=Fals
 
         return np.array([0, 0, 0]), (x, y)  # Return black and original point if no valid color found
 
-    colors_and_points1 = [get_color_at_point(piece1, pt, inward_offset=20) for pt in sample_points1]
-    colors_and_points2 = [get_color_at_point(piece2, pt, inward_offset=20) for pt in sample_points2]
+    inward_offset = 8
 
+    colors_and_points1 = [get_color_at_point(piece1, pt, inward_offset) for pt in sample_points1]
+    colors_and_points2 = [get_color_at_point(piece2, pt, inward_offset) for pt in sample_points2]
+
+
+    print("---------DEBUGGING---------")
+    print(f"len colors and points 1 {len(colors_and_points1)}")
 
     colors1 = np.array([cp[0] for cp in colors_and_points1])
+
+    print(colors1)
+
     sample_inward_points1 = [cp[1] for cp in colors_and_points1]
+    print(sample_inward_points1)
     colors2 = np.array([cp[0] for cp in colors_and_points2])
     sample_inward_points2 = [cp[1] for cp in colors_and_points2]
 
@@ -1366,8 +1464,12 @@ def compute_edge_matching_score(piece1, edge1_idx, piece2, edge2_idx, debug=Fals
     if len(valid_indices) < 3:
         # Not enough valid color points to compare
         if debug:
+            print(" ---- ##### DEBUG ERROR SETTING TO 0 ######  -----")
             print(f"Not enough valid color points. Score = 0")
         return 0
+
+    print("---------- #### DEBUG COMPUTING COLORS DIFF ------------")
+
 
     # Compute color difference for valid points
     color_diffs = []
@@ -1378,8 +1480,13 @@ def compute_edge_matching_score(piece1, edge1_idx, piece2, edge2_idx, debug=Fals
 
     # Normalize color differences to get a score [0-1]
     avg_diff = np.mean(color_diffs)
-    max_possible_diff = 255 * np.sqrt(3)  # Maximum possible RGB distance
+
+    # max_possible_diff = 255 * np.sqrt(3)  # Maximum possible RGB distance
+    # score = 1.0 - (avg_diff / max_possible_diff)
+
+    max_possible_diff = 255 * np.sqrt(3) / 2  # Divide by 3 to make scoring more strict
     score = 1.0 - (avg_diff / max_possible_diff)
+    score = max(0, min(1, score))  # Clamp to [0,1] range
 
     if debug:
         print(f"Edge {edge1_idx} of piece {piece1.piece_id} (OUT) and edge {edge2_idx} of piece {piece2.piece_id} (IN)")
@@ -1610,63 +1717,95 @@ def compute_edge_matching_score(piece1, edge1_idx, piece2, edge2_idx, debug=Fals
                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0, 255), 1)
 
         # Draw sample colors for comparison
-        sample_size = 20
-        sample_spacing = 25
-        sample_y = visualization_height - 100
+        sample_size = 15  # Slightly smaller squares to fit more
+        sample_spacing = 3  # Reduced spacing for tighter layout
+        score_circle_radius = 5  # Size of score indicator circles
+        sample_y1 = visualization_height - 140  # Position for first piece colors
+        sample_y2 = visualization_height - 100  # Position for second piece colors
+        score_y = visualization_height - 70     # Position for score circles
 
-        # Draw legend
-        cv2.putText(visualization, "Color Sample Comparison:", (50, sample_y - 30),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0, 255), 1)
+        # Calculate how many samples we can fit
+        max_display_width = visualization_width - 100  # Leave margins
+        max_columns = min(len(valid_indices), max_display_width // (sample_size + sample_spacing))
 
-        # Draw color samples and connection lines
-        for i in range(min(10, len(valid_indices))):
+        # Calculate total width for centering
+        total_width = max_columns * (sample_size + sample_spacing)
+        start_x = (visualization_width - total_width) // 2
+
+        # Draw color samples and scores in a vertically aligned grid
+        for i in range(max_columns):
             idx = valid_indices[i]
-            rainbow_color_i = rainbow_color(i * 25, with_alpha=True)
 
-            # Left side sample (piece1) - with alpha
-            sample_x1 = 50 + i * (sample_size + sample_spacing)
+            # Get rainbow color for this point
+            total_sample_points = len(valid_indices)
+            rainbow_color_i = rainbow_color(i, total_sample_points, with_alpha=True)
+
+            # Calculate x position for this column
+            sample_x = start_x + i * (sample_size + sample_spacing)
+
+            # Top row: piece1 color sample with rainbow border
             color1 = (int(colors1[idx][0]), int(colors1[idx][1]), int(colors1[idx][2]), 255)
             cv2.rectangle(visualization,
-                          (sample_x1, sample_y),
-                          (sample_x1 + sample_size, sample_y + sample_size),
+                          (sample_x, sample_y1),
+                          (sample_x + sample_size, sample_y1 + sample_size),
                           color1, -1)
 
-            # Add border with rainbow color to match the sample point
+            # Add rainbow border to match sample point
             cv2.rectangle(visualization,
-                          (sample_x1-2, sample_y-2),
-                          (sample_x1 + sample_size+2, sample_y + sample_size+2),
+                          (sample_x-2, sample_y1-2),
+                          (sample_x + sample_size+2, sample_y1 + sample_size+2),
                           rainbow_color_i, 2)
 
-            # Right side sample (piece2) - with alpha
-            sample_x2 = divider_x + 50 + i * (sample_size + sample_spacing)
+            # Bottom row: piece2 color sample with rainbow border
             color2 = (int(colors2[idx][0]), int(colors2[idx][1]), int(colors2[idx][2]), 255)
             cv2.rectangle(visualization,
-                          (sample_x2, sample_y),
-                          (sample_x2 + sample_size, sample_y + sample_size),
+                          (sample_x, sample_y2),
+                          (sample_x + sample_size, sample_y2 + sample_size),
                           color2, -1)
 
-            # Add border with rainbow color to match the sample point
+            # Add rainbow border to match sample point
             cv2.rectangle(visualization,
-                          (sample_x2-2, sample_y-2),
-                          (sample_x2 + sample_size+2, sample_y + sample_size+2),
+                          (sample_x-2, sample_y2-2),
+                          (sample_x + sample_size+2, sample_y2 + sample_size+2),
                           rainbow_color_i, 2)
 
-            # Draw connection line with color indicating match quality
+            # Draw vertical connection line between the two colors
             match_quality = 1.0 - (color_diffs[i] / max_possible_diff)
             line_color = (0, int(255 * match_quality), int(255 * (1 - match_quality)), 255)
             cv2.line(visualization,
-                    (sample_x1 + sample_size//2, sample_y + sample_size + 5),
-                    (sample_x2 + sample_size//2, sample_y + sample_size + 5),
+                    (sample_x + sample_size//2, sample_y1 + sample_size),
+                    (sample_x + sample_size//2, sample_y2),
                     line_color, 2)
 
-            # Add text showing color difference
-            diff_text = f"{color_diffs[i]:.1f}"
-            text_x = (sample_x1 + sample_x2 + sample_size) // 2
-            cv2.putText(visualization, diff_text, (text_x - 15, sample_y + sample_size + 20),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0, 255), 1)
+            # Draw a colored circle to indicate match quality (red=bad, green=good)
+            score_color = (
+                0,                               # B: No blue component
+                int(255 * match_quality),        # G: More green for good matches
+                int(255 * (1 - match_quality)),  # R: More red for bad matches
+                255                              # Alpha
+            )
 
-        # Save the visualization to a file
-        match_filename = f"match_p{piece1.piece_id}_e{edge1_idx}_p{piece2.piece_id}_e{edge2_idx}_{score:.2f}.png"
+            cv2.circle(visualization,
+                       (sample_x + sample_size//2, score_y),
+                       score_circle_radius,
+                       score_color,
+                       -1)  # -1 = filled circle
+
+        # Add labels for the color rows
+        cv2.putText(visualization, "L:",
+                    (start_x - 60, sample_y1 + sample_size//2),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 0, 255), 1)
+
+        cv2.putText(visualization, "R:",
+                    (start_x - 60, sample_y2 + sample_size//2),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 0, 255), 1)
+
+        # Add legend for score circles
+        legend_x = visualization_width - 150
+        legend_y = score_y
+
+        # Modify the filename format to match_p1_e1_p7_e2.png
+        match_filename = f"match_p{piece1.piece_id}_e{edge1_idx}_p{piece2.piece_id}_e{edge2_idx}.png"
         match_filepath = os.path.join(output_matching, match_filename)
         cv2.imwrite(match_filepath, visualization)
 
@@ -1676,7 +1815,7 @@ def compute_edge_matching_score(piece1, edge1_idx, piece2, edge2_idx, debug=Fals
     return score
 
 
-# In[683]:
+# In[1630]:
 
 
 # Calculate matches for all pieces against each other
@@ -1698,8 +1837,8 @@ for i, piece1 in enumerate(pieces_to_match):
 
     #### DEBUG SELECT PIECE ####
 
-    if piece1.piece_id != 1:
-        continue
+    # if piece1.piece_id not in [1, 2, 3, 4, 5, 6, 7, 8, 9]:
+    #     continue
 
 
     print(f"\nProcessing piece {piece1.piece_id} ({i+1}/{total_pieces})")
@@ -1782,7 +1921,7 @@ my_puzzle.edge_match_lookup = best_edge_matches
 print("\nMatch calculation complete!")
 
 
-# In[684]:
+# In[1631]:
 
 
 # Sort all matches by score (highest first)
@@ -1820,7 +1959,7 @@ my_puzzle.edge_match_lookup = edge_match_lookup
 print("Match calculation complete and stored in my_puzzle.all_edge_matches and my_puzzle.edge_match_lookup")
 
 
-# In[685]:
+# In[1632]:
 
 
 puzzle_reconstruction = Canvas(
@@ -1843,7 +1982,7 @@ print(f"Using corner piece {corner_piece_id}")
 # corner_piece.skip_id_label = True
 
 
-# In[686]:
+# In[1633]:
 
 
 flat_edge_indices = [i for i, edge_data in enumerate(corner_piece.edges) if edge_data[3] == 0]
@@ -1857,7 +1996,7 @@ target_flat_edges = [0, 3] # North and West
 print(target_flat_edges)
 
 
-# In[687]:
+# In[1634]:
 
 
 rotations_needed = None
@@ -1874,7 +2013,7 @@ for r in range(4):
         break
 
 
-# In[688]:
+# In[1635]:
 
 
 print(f"Placing corner piece {corner_piece_id} with {rotations_needed * 90}° rotation")
