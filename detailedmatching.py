@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[510]:
+# In[656]:
 
 
 import cv2
@@ -15,13 +15,13 @@ import pandas as pd
 import math
 
 
-# In[511]:
+# In[657]:
 
 
 image_path = "images/hack2.png"
 
 
-# In[512]:
+# In[658]:
 
 
 def display_image(title, image):
@@ -35,7 +35,7 @@ def display_image(title, image):
     plt.show()
 
 
-# In[513]:
+# In[659]:
 
 
 # ## Basic reading image and display
@@ -45,7 +45,7 @@ if original_image is None:
     raise ValueError(f"Could not read image from {image_path}")
 
 
-# In[514]:
+# In[660]:
 
 
 # ## Grayscale conversion
@@ -54,7 +54,7 @@ gray_image = cv2.cvtColor(original_image, cv2.COLOR_BGR2GRAY)
 # display_image("Grayscale Image", gray_image)
 
 
-# In[515]:
+# In[661]:
 
 
 # print("Threshold to separate pieces from background")
@@ -62,7 +62,7 @@ _, binary_image = cv2.threshold(gray_image, 30, 255, cv2.THRESH_BINARY)
 # display_image("Binary Image", binary_image)
 
 
-# In[516]:
+# In[662]:
 
 
 kernel = np.ones((12, 12), np.uint8)
@@ -74,7 +74,7 @@ morph_image = cv2.morphologyEx(morph_image, cv2.MORPH_OPEN, kernel)
 # display_image("Morph Operations", morph_image)
 
 
-# In[517]:
+# In[663]:
 
 
 # print("Filling holes in puzzle pieces")
@@ -84,7 +84,7 @@ for cnt in contours_fill:
 # display_image("Filled Holes", morph_image)
 
 
-# In[518]:
+# In[664]:
 
 
 # ## Contours finding
@@ -92,7 +92,7 @@ contours, _ = cv2.findContours(morph_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_
 # print(f"Found {len(contours)} potential puzzle pieces")
 
 
-# In[519]:
+# In[665]:
 
 
 # print("Filtering contours by size")
@@ -103,7 +103,7 @@ if len(contours) > 1:
 # print(f"After filtering: {len(contours)} puzzle pieces")
 
 
-# In[520]:
+# In[666]:
 
 
 # print("Drawing contours of the original image")
@@ -111,7 +111,7 @@ contour_image = original_image.copy()
 # cv2.drawContours(contour_image, contours, -1, (0, 255, 0), 2)
 
 
-# In[521]:
+# In[667]:
 
 
 output_folder_pieces = "images/extracted_pieces"
@@ -138,11 +138,15 @@ os.makedirs(output_oriented_folder, exist_ok=True)
 output_edges_and_corner_folder = "images/edges_and_corners"
 os.makedirs(output_edges_and_corner_folder, exist_ok=True)
 
+
+output_matching = "images/matching"
+os.makedirs(output_matching, exist_ok=True)
+
 output_tests = "images/tests"
 os.makedirs(output_tests, exist_ok=True)
 
 
-# In[522]:
+# In[668]:
 
 
 class Edge:
@@ -157,7 +161,7 @@ class Edge:
         self.color_edge_line = None
 
 
-# In[523]:
+# In[669]:
 
 
 class puzzlePiece:
@@ -205,7 +209,7 @@ class puzzlePiece:
         return ret
 
 
-# In[524]:
+# In[670]:
 
 
 class Puzzle:
@@ -219,13 +223,13 @@ class Puzzle:
         self.middle_pieces = []
 
 
-# In[525]:
+# In[671]:
 
 
 my_puzzle = Puzzle()
 
 
-# In[526]:
+# In[672]:
 
 
 for contours_indices in range(len(contours)):
@@ -559,7 +563,7 @@ for contours_indices in range(len(contours)):
     my_puzzle.all_pieces[selected_image_index] = this_piece
 
 
-# In[527]:
+# In[673]:
 
 
 print("----------- STATS ---------- ")
@@ -573,7 +577,7 @@ print("Middles: ", my_puzzle.middle_pieces)
 
 # ## Algorithm to find the puzzle size
 
-# In[528]:
+# In[674]:
 
 
 def find_puzzle_size(total, corners, borders, middles):
@@ -588,7 +592,7 @@ def find_puzzle_size(total, corners, borders, middles):
     return None
 
 
-# In[529]:
+# In[675]:
 
 
 puzzle_r, puzzle_c = find_puzzle_size(len(my_puzzle.all_pieces), len(my_puzzle.corners_pieces), len(my_puzzle.borders_pieces), len(my_puzzle.middle_pieces))
@@ -596,7 +600,7 @@ print(puzzle_r)
 print(puzzle_c)
 
 
-# In[530]:
+# In[676]:
 
 
 def display_image_cv2(title, image):
@@ -618,7 +622,7 @@ def display_image_cv2(title, image):
     cv2.destroyAllWindows()
 
 
-# In[531]:
+# In[677]:
 
 
 # target_index = 5
@@ -629,7 +633,7 @@ def display_image_cv2(title, image):
 # 
 # pieces with a straight edge -> y axis orientation
 
-# In[532]:
+# In[678]:
 
 
 # Create a new white canvas to place all oriented pieces
@@ -652,7 +656,7 @@ max_height_in_row = 0
 piece_count = 0
 
 
-# In[533]:
+# In[679]:
 
 
 class Canvas:
@@ -666,7 +670,7 @@ class Canvas:
         self.margin = margin
 
         # Initialize canvas with transparent white background
-        self.canvas = np.ones((height, width, puzzle_c), dtype=np.uint8) * 255
+        self.canvas = np.ones((height, width, 4), dtype=np.uint8) * 255
         self.canvas[:,:,3] = 255  # Full alpha
 
         # Placement tracking
@@ -674,26 +678,157 @@ class Canvas:
         self.current_y = margin
         self.max_height_in_row = 0
         self.piece_count = 0
-        self.row_heights = [0] * ((width // (piece_spacing + 0)) + 1)
+        # Avoid division by zero when column_spacing is 0
+        row_heights_size = max_pieces_per_row * 2 if column_spacing == 0 else ((width // (column_spacing + 1)) + 1)
+        self.row_heights = [0] * row_heights_size
         self.piece_positions = []  # Store (piece_id, x, y) tuples
 
-    def place_piece(self, piece):
-        # Calculate position on the grid
-        row = self.piece_count // self.max_pieces_per_row
-        col = self.piece_count % self.max_pieces_per_row
+        # For puzzle reconstruction
+        self.grid = {}  # Dictionary mapping (x,y) grid positions to piece IDs
 
-        # Start a new row if needed
-        if col == 0 and self.piece_count > 0:
-            self.current_y += self.max_height_in_row + self.row_spacing  # Use row_spacing
-            self.current_x = self.margin
-            self.max_height_in_row = 0
+    def rotate_piece(self, piece, rotations=1):
+        # Make sure rotations is between 0 and 3
+        rotations = rotations % 4
+        if rotations == 0:
+            return piece  # No rotation needed
+
+        print(f"Rotating piece {piece.piece_id} by {rotations * 90} degrees")
+
+        # Step 1: Rotate the image
+        h, w = piece.rotated_image.shape[:2]
+        rotated_image = piece.rotated_image.copy()
+
+        for _ in range(rotations):
+            rotated_image = cv2.rotate(rotated_image, cv2.ROTATE_90_CLOCKWISE)
+
+        # Step 2: Rotate the corners
+        rotated_corners = piece.rotated_corners.copy()
+        center = (w/2, h/2)
+
+        for _ in range(rotations):
+            # For each 90-degree rotation, (x,y) -> (y, w-x)
+            new_corners = []
+            for x, y in rotated_corners:
+                # Rotate around center
+                new_x = center[0] + (y - center[1])
+                new_y = center[1] - (x - center[0])
+                new_corners.append((int(new_x), int(new_y)))
+            rotated_corners = new_corners
+
+        # Step 3: Update the piece's properties
+        piece.rotated_image = rotated_image
+        piece.rotated_corners = rotated_corners
+
+        # Step 4: Rotate the rotated center
+        if piece.rotated_center:
+            cx, cy = piece.rotated_center
+            rotated_center = (cx, cy)
+            for _ in range(rotations):
+                rx = center[0] + (rotated_center[1] - center[1])
+                ry = center[1] - (rotated_center[0] - center[0])
+                rotated_center = (int(rx), int(ry))
+            piece.rotated_center = rotated_center
+
+        # Step 5: Update the edges to reflect the rotation
+        # Rotate the edges_ord list
+        if piece.edges_ord:
+            piece.edges_ord = piece.edges_ord[-rotations:] + piece.edges_ord[:-rotations]
+
+        # For edge connections, we need to also rotate the edge indices for proper matching
+        if hasattr(piece, 'edges') and piece.edges:
+            # We need to create a new list with updated edge indices
+            rotated_edges = []
+            for i in range(len(piece.edges)):
+                # Calculate the new edge index after rotation
+                new_idx = (i + rotations) % len(piece.edges)
+                edge_data = list(piece.edges[i])  # Convert tuple to list for modification
+
+                # Update the edge ID (first element is typically an ID)
+                edge_data[0] = chr(ord('a') + new_idx)
+
+                # The corner indices need to be remapped too, but this requires the full contour
+                # For now, we'll just update the other elements
+                rotated_edges.append(tuple(edge_data))
+
+            # Sort by the new edge IDs if needed
+            # piece.edges = sorted(rotated_edges, key=lambda x: x[0])
+
+        return piece
+
+    def display(self):
+        # Create a figure with appropriate size
+        fig_width = min(12, self.width / 100)
+        fig_height = min(10, self.height / 100)
+        plt.figure(figsize=(fig_width, fig_height))
+
+        # Handle image with alpha channel (transparency)
+        if self.canvas.shape[2] == 4:
+            # Create RGB image with white background
+            rgb_image = np.ones((self.canvas.shape[0], self.canvas.shape[1], 3), dtype=np.uint8) * 255
+
+            # Extract alpha channel
+            alpha = self.canvas[:, :, 3] / 255.0
+
+            # Create 3-channel alpha
+            alpha_3channel = np.stack([alpha, alpha, alpha], axis=2)
+
+            # Extract BGR channels and convert to RGB
+            bgr = self.canvas[:, :, :3]
+            rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
+
+            # Blend using alpha
+            result = (alpha_3channel * rgb + (1 - alpha_3channel) * rgb_image).astype(np.uint8)
+
+            plt.imshow(result)
+        else:
+            # Regular RGB image
+            plt.imshow(cv2.cvtColor(self.canvas, cv2.COLOR_BGR2RGB))
+
+        plt.axis('off')
+        plt.title("Puzzle Reconstruction")
+        plt.tight_layout()
+        plt.show()
+
+    def place_piece(self, piece, grid_x=None, grid_y=None, rotations=0):
+        # Apply any requested rotation
+        if rotations > 0:
+            self.rotate_piece(piece, rotations)
+
+        # If grid positions are specified, use them for placement
+        if grid_x is not None and grid_y is not None:
+            # Calculate position based on grid coordinates
+            x = self.margin + grid_x * self.column_spacing
+            y = self.margin + grid_y * self.row_spacing
+            self.grid[(grid_x, grid_y)] = piece.piece_id
+
+            # For reconstruction, we need to adjust according to piece features
+            # This depends on your specific needs for how pieces should align
+
+            # Store placement info
+            self.piece_positions.append((piece.piece_id, x, y))
+
+            # Set current position for drawing
+            self.current_x = x
+            self.current_y = y
+        else:
+            # Calculate position on the grid (for regular display)
+            row = self.piece_count // self.max_pieces_per_row
+            col = self.piece_count % self.max_pieces_per_row
+
+            # Start a new row if needed
+            if col == 0 and self.piece_count > 0:
+                self.current_y += self.max_height_in_row + self.row_spacing
+                self.current_x = self.margin
+                self.max_height_in_row = 0
 
         # Get piece dimensions
         piece_height, piece_width = piece.rotated_image.shape[:2]
         self.max_height_in_row = max(self.max_height_in_row, piece_height)
 
-        # Get reference corner (first rotated corner)
-        ref_corner = piece.rotated_corners[piece.flat_edge_id]
+        # Get reference corner (first rotated corner), if available
+        ref_corner = (0, 0)
+        if hasattr(piece, 'rotated_corners') and piece.rotated_corners and hasattr(piece, 'flat_edge_id'):
+            ref_corner = piece.rotated_corners[piece.flat_edge_id]
 
         # Calculate adjusted placement coordinates
         adjusted_x = self.current_x - ref_corner[0]
@@ -726,20 +861,81 @@ class Canvas:
                         piece.rotated_image[img_y_start:img_y_end, img_x_start:img_x_end, 3]
                     )
 
-        cv2.putText(piece.rotated_image, str(piece.piece_id), piece.rotated_center,
-            cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255, 255), 2)
-
-        # Store piece position for future reference
-        self.piece_positions.append((piece.piece_id, self.current_x, self.current_y))
+        # Add piece ID text - only if requested
+        if piece.rotated_center and not hasattr(piece, 'skip_id_label'):
+            center_x = x_start + (piece.rotated_center[0] - img_x_start)
+            center_y = y_start + (piece.rotated_center[1] - img_y_start)
+            # cv2.putText(self.canvas, str(piece.piece_id), (center_x, center_y),
+            #     cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255, 255), 2)
 
         # Debug marker
         cv2.circle(self.canvas, (self.current_x, self.current_y), 3, (0, 0, 255, 255), -1)
 
-        # Move to next position
-        self.current_x += self.column_spacing + 100
-        self.piece_count += 1
+        # Move to next position for regular placement
+        if grid_x is None or grid_y is None:
+            self.current_x += self.column_spacing + 100
+            self.piece_count += 1
 
         return self.piece_count - 1  # Return the position index
+
+    def place_corner(self, piece, corner_position="top-left"):
+        # Determine grid position based on requested corner
+        if corner_position == "top-left":
+            grid_x, grid_y = 0, 0
+            target_flat_edges = [0, 3]  # North and West
+        elif corner_position == "top-right":
+            grid_x, grid_y = self.max_pieces_per_row - 1, 0
+            target_flat_edges = [0, 1]  # North and East
+        elif corner_position == "bottom-left":
+            grid_x, grid_y = 0, self.max_pieces_per_row - 1
+            target_flat_edges = [2, 3]  # South and West
+        elif corner_position == "bottom-right":
+            grid_x, grid_y = self.max_pieces_per_row - 1, self.max_pieces_per_row - 1
+            target_flat_edges = [1, 2]  # East and South
+        else:
+            raise ValueError(f"Invalid corner position: {corner_position}")
+
+        # Find which edges of the piece are flat (type 0)
+        flat_edge_indices = [i for i, edge_data in enumerate(piece.edges) if edge_data[3] == 0]
+        print(f"Flat edges for piece {piece.piece_id}: {flat_edge_indices}")
+
+        # Determine how many rotations are needed
+        rotations_needed = None
+        for r in range(4):
+            # Calculate where the flat edges would be after r rotations
+            rotated_flat_edges = [(idx + r) % 4 for idx in flat_edge_indices]
+            rotated_flat_edges.sort()
+
+            if rotated_flat_edges == sorted(target_flat_edges):
+                rotations_needed = r
+                break
+
+        # If we couldn't find a valid rotation, try best approximation
+        if rotations_needed is None:
+            print("Warning: Couldn't find perfect corner orientation, using best approximation")
+            # Try to match at least one flat edge
+            for r in range(4):
+                rotated_flat_edges = [(idx + r) % 4 for idx in flat_edge_indices]
+                if any(edge in target_flat_edges for edge in rotated_flat_edges):
+                    rotations_needed = r
+                    break
+            # If still none found, just use 0
+            if rotations_needed is None:
+                rotations_needed = 0
+
+        print(f"Placing {corner_position} corner (piece {piece.piece_id}) with {rotations_needed * 90}° rotation")
+
+        # Place the piece with the calculated rotation
+        self.place_piece(piece, grid_x, grid_y, rotations=rotations_needed)
+
+        # Add to the grid
+        self.grid[(grid_x, grid_y)] = piece.piece_id
+
+        # Print verification
+        flat_edge_indices_after = [(i + rotations_needed) % 4 for i in flat_edge_indices]
+        print(f"Flat edges after rotation: {flat_edge_indices_after}")
+
+        return grid_x, grid_y
 
     def save(self, path):
         """Save the canvas to file"""
@@ -753,7 +949,7 @@ class Canvas:
         return None
 
 
-# In[534]:
+# In[680]:
 
 
 # First process and reorient all pieces
@@ -958,7 +1154,7 @@ for index in (my_puzzle.borders_pieces + my_puzzle.corners_pieces):
 print("All pieces oriented and processed!")
 
 
-# In[535]:
+# In[681]:
 
 
 # Create a canvas object with custom spacing
@@ -979,24 +1175,11 @@ canvas_obj.save(canvas_path)
 print(f"Canvas saved to {canvas_path}")
 
 
-# In[539]:
+# In[682]:
 
 
 # Edge matching function to compute a matching score between two puzzle piece edges
 def compute_edge_matching_score(piece1, edge1_idx, piece2, edge2_idx, debug=False):
-    """
-    Compute a matching score between two edges of different puzzle pieces.
-
-    Args:
-        piece1: First puzzle piece
-        edge1_idx: Index of the edge in piece1
-        piece2: Second puzzle piece
-        edge2_idx: Index of the edge in piece2
-        debug: Whether to save debug images
-
-    Returns:
-        score: A matching score between 0 and 1, where 1 is perfect match
-    """
     # Get edge types
     edge1_type = piece1.edges[edge1_idx][3]
     edge2_type = piece2.edges[edge2_idx][3]
@@ -1005,6 +1188,8 @@ def compute_edge_matching_score(piece1, edge1_idx, piece2, edge2_idx, debug=Fals
     if edge1_type == 0 or edge2_type == 0:
         if debug:
             print(f"Edge {edge1_idx} of piece {piece1.piece_id} or edge {edge2_idx} of piece {piece2.piece_id} is flat. Score = 0")
+
+
         return 0
 
     # Check if both edges are the same type (both IN or both OUT)
@@ -1012,6 +1197,24 @@ def compute_edge_matching_score(piece1, edge1_idx, piece2, edge2_idx, debug=Fals
         if debug:
             print(f"Both edges are type {edge1_type}. Score = 0")
         return 0
+
+
+    # Check if both pieces are border pieces (have at least one flat edge)
+    piece1_has_flat = any(edge[3] == 0 for edge in piece1.edges)
+    piece2_has_flat = any(edge[3] == 0 for edge in piece2.edges)
+
+    # If both are border pieces, check if the current edges are opposite to flat edges
+    if piece1_has_flat and piece2_has_flat:
+        # Find the flat edge indices
+        flat_edge1_idx = next((i for i, edge in enumerate(piece1.edges) if edge[3] == 0), None)
+        flat_edge2_idx = next((i for i, edge in enumerate(piece2.edges) if edge[3] == 0), None)
+
+        # Check if current edge is opposite to a flat edge (2 positions away in clockwise order)
+        if (flat_edge1_idx is not None and (edge1_idx == (flat_edge1_idx + 2) % 4)) or \
+           (flat_edge2_idx is not None and (edge2_idx == (flat_edge2_idx + 2) % 4)):
+            if debug:
+                print(f"Edge {edge1_idx} of piece {piece1.piece_id} or edge {edge2_idx} of piece {piece2.piece_id} is opposite to a flat edge. Score = 0")
+            return 0
 
     # Check if adjacent edges match for border pieces
     # For piece1: adjacent edges are (edge1_idx-1)%4 and (edge1_idx+1)%4
@@ -1102,19 +1305,14 @@ def compute_edge_matching_score(piece1, edge1_idx, piece2, edge2_idx, debug=Fals
     sample_points2 = sample_points2[::-1]
 
     # Function to get color at a point and slightly inside the piece
-    def get_color_at_point(piece, point, inward_offset=3):
+    # Replace the get_color_at_point function in compute_edge_matching_score with this improved version
+    def get_color_at_point(piece, point, inward_offset=20):
         x, y = point[0]
 
         # Calculate piece center
         cx, cy = piece.absolute_center
 
-        # Calculate unit vector from point to center
-        dx, dy = cx - x, cy - y
-        length = np.sqrt(dx**2 + dy**2)
-        if length > 0:
-            dx, dy = dx/length, dy/length
-        else:
-            return np.array([0, 0, 0])  # Default color if at center
+        # [Same logic to calculate dx, dy as before]
 
         # Calculate point slightly inside the piece
         inside_x = int(x + dx * inward_offset)
@@ -1130,24 +1328,34 @@ def compute_edge_matching_score(piece1, edge1_idx, piece2, edge2_idx, debug=Fals
             color = original_image[inside_y, inside_x]
             # Check if the color is not black (background)
             if np.sum(color) > 30:  # simple threshold to avoid black pixels
-                return color
+                return color, (inside_x, inside_y)
 
         # If outside mask or color is black, try a different offset
-        for offset in [5, 7, 10]:
-            inside_x = int(x + dx * offset)
-            inside_y = int(y + dy * offset)
-            inside_x = max(0, min(inside_x, w-1))
-            inside_y = max(0, min(inside_y, h-1))
-            if piece.mask[inside_y, inside_x] > 0:
-                color = original_image[inside_y, inside_x]
+        for offset in [7, 10, 15]:
+            new_x = int(x + dx * offset)
+            new_y = int(y + dy * offset)
+            new_x = max(0, min(new_x, w-1))
+            new_y = max(0, min(new_y, h-1))
+            if 0 <= new_y < h and 0 <= new_x < w and piece.mask[new_y, new_x] > 0:
+                color = original_image[new_y, new_x]
                 if np.sum(color) > 30:
-                    return color
+                    return color, (new_x, new_y)
 
-        return np.array([0, 0, 0])  # Return black if no valid color found
+        return np.array([0, 0, 0]), (x, y)  # Return black and original point if no valid color found
 
-    # Get colors for each sample point
-    colors1 = np.array([get_color_at_point(piece1, pt) for pt in sample_points1])
-    colors2 = np.array([get_color_at_point(piece2, pt) for pt in sample_points2])
+    colors_and_points1 = [get_color_at_point(piece1, pt, inward_offset=20) for pt in sample_points1]
+    colors_and_points2 = [get_color_at_point(piece2, pt, inward_offset=20) for pt in sample_points2]
+
+
+    colors1 = np.array([cp[0] for cp in colors_and_points1])
+    sample_inward_points1 = [cp[1] for cp in colors_and_points1]
+    colors2 = np.array([cp[0] for cp in colors_and_points2])
+    sample_inward_points2 = [cp[1] for cp in colors_and_points2]
+
+
+    # # Get colors for each sample point
+    # colors1 = np.array([get_color_at_point(piece1, pt) for pt in sample_points1])
+    # colors2 = np.array([get_color_at_point(piece2, pt) for pt in sample_points2])
 
     # Filter out black points (background)
     valid_indices = []
@@ -1194,53 +1402,508 @@ def compute_edge_matching_score(piece1, edge1_idx, piece2, edge2_idx, debug=Fals
         cv2.imwrite(debug_path1, debug_img1)
         cv2.imwrite(debug_path2, debug_img2)
 
+
+    #### DEBUG PRINT PIECE MATCHING TO CV2 IMAGE ####
+
+    if debug:
+        # Create output directory
+        output_matching = "images/matching"
+        os.makedirs(output_matching, exist_ok=True)
+
+        # Create a visualization of the edge matching
+        visualization_height = 600
+        visualization_width = 1000
+        # Create visualization with transparent background (4 channels)
+        visualization = np.ones((visualization_height, visualization_width, 4), dtype=np.uint8) * 255
+        visualization[:, :, 3] = 255  # Full alpha
+
+        # Define regions for the two pieces
+        region_width = 400
+        margin = 50
+        divider_x = visualization_width // 2
+
+        # Draw title
+        title = f"Edge Match: P{piece1.piece_id}(E{edge1_idx}) vs P{piece2.piece_id}(E{edge2_idx}) - Score: {score:.3f}"
+        cv2.putText(visualization, title, (50, 30),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 0, 255), 2)
+
+        # Draw vertical divider
+        cv2.line(visualization, (divider_x, 0), (divider_x, visualization_height),
+                 (100, 100, 100, 255), 2)
+
+        # Extract regions around the edges being tested
+        def extract_edge_region(piece, edge_idx):
+            # Get edge corners
+            start_corner = piece.rotated_corners[edge_idx]
+            end_corner = piece.rotated_corners[(edge_idx + 1) % len(piece.rotated_corners)]
+
+            # Calculate region center and size
+            center_x = (start_corner[0] + end_corner[0]) // 2
+            center_y = (start_corner[1] + end_corner[1]) // 2
+
+            # Calculate distance between corners
+            dist = np.sqrt((end_corner[0] - start_corner[0])**2 + (end_corner[1] - start_corner[1])**2)
+            size = int(dist * 2.5)  # Make region larger than just the edge
+
+            # Extract region
+            x1 = max(0, center_x - size//2)
+            y1 = max(0, center_y - size//2)
+            x2 = min(piece.rotated_image.shape[1], center_x + size//2)
+            y2 = min(piece.rotated_image.shape[0], center_y + size//2)
+
+            # Make a copy of the region
+            region = piece.rotated_image[y1:y2, x1:x2].copy()
+
+            # Resize to fit in visualization
+            if region.shape[0] > 0 and region.shape[1] > 0:
+                scale = min(region_width / region.shape[1],
+                            (visualization_height - 200) / region.shape[0])
+                new_width = int(region.shape[1] * scale)
+                new_height = int(region.shape[0] * scale)
+
+                resized = cv2.resize(region, (new_width, new_height))
+                return resized, (x1, y1, x2, y2), scale
+
+            return np.ones((10, 10, 4), dtype=np.uint8) * 255, (0, 0, 0, 0), 1.0
+
+        # Extract regions
+        region1, bounds1, scale1 = extract_edge_region(piece1, edge1_idx)
+        region2, bounds2, scale2 = extract_edge_region(piece2, edge2_idx)
+
+        # Place regions in visualization
+        y_offset1 = (visualization_height - region1.shape[0]) // 3
+        y_offset2 = (visualization_height - region2.shape[0]) // 3
+
+        x_offset1 = divider_x - region1.shape[1] - margin
+        x_offset2 = divider_x + margin
+
+        # Place regions with proper alpha handling
+        if region1.shape[2] == 4:  # Has alpha channel
+            for c in range(4):  # For all channels including alpha
+                alpha = region1[:, :, 3:4] / 255.0
+                if c < 3:  # RGB channels
+                    visualization[y_offset1:y_offset1+region1.shape[0],
+                                 x_offset1:x_offset1+region1.shape[1], c] = (
+                        visualization[y_offset1:y_offset1+region1.shape[0],
+                                     x_offset1:x_offset1+region1.shape[1], c] * (1 - alpha[:, :, 0]) +
+                        region1[:, :, c] * alpha[:, :, 0]
+                    )
+                else:  # Alpha channel
+                    visualization[y_offset1:y_offset1+region1.shape[0],
+                                  x_offset1:x_offset1+region1.shape[1], 3] = np.maximum(
+                        visualization[y_offset1:y_offset1+region1.shape[0],
+                                      x_offset1:x_offset1+region1.shape[1], 3],
+                        region1[:, :, 3]
+                    )
+
+        if region2.shape[2] == 4:  # Has alpha channel
+            for c in range(4):  # For all channels including alpha
+                alpha = region2[:, :, 3:4] / 255.0
+                if c < 3:  # RGB channels
+                    visualization[y_offset2:y_offset2+region2.shape[0],
+                                 x_offset2:x_offset2+region2.shape[1], c] = (
+                        visualization[y_offset2:y_offset2+region2.shape[0],
+                                     x_offset2:x_offset2+region2.shape[1], c] * (1 - alpha[:, :, 0]) +
+                        region2[:, :, c] * alpha[:, :, 0]
+                    )
+                else:  # Alpha channel
+                    visualization[y_offset2:y_offset2+region2.shape[0],
+                                  x_offset2:x_offset2+region2.shape[1], 3] = np.maximum(
+                        visualization[y_offset2:y_offset2+region2.shape[0],
+                                      x_offset2:x_offset2+region2.shape[1], 3],
+                        region2[:, :, 3]
+                    )
+
+        # Function to generate rainbow colors
+        def rainbow_color(i, num_points, with_alpha=False):
+            if num_points <= 1:
+                t = 0  # If only one point, use first color
+            else:
+                t = (i / (num_points - 1)) * 255  # Scale to 0-255 range
+
+            phase = t / 255 * 6
+            x = int(255 * (1 - abs(phase % 2 - 1)))
+
+            if phase < 1:     color = (255, x, 0)       # Red → Yellow
+            elif phase < 2:   color = (x, 255, 0)       # Yellow → Green
+            elif phase < 3:   color = (0, 255, x)       # Green → Cyan
+            elif phase < 4:   color = (0, x, 255)       # Cyan → Blue
+            elif phase < 5:   color = (x, 0, 255)       # Blue → Magenta
+            else:             color = (255, 0, x)       # Magenta → Red
+
+            if with_alpha:
+                return (color[0], color[1], color[2], 255)
+            return color
+
+        # Draw sample points on both pieces with rainbow colors
+        for i, idx in enumerate(valid_indices):
+            # Get the original sample points from the full contour
+            pt1 = sample_inward_points1[idx]
+            pt2 = sample_inward_points2[idx]
+
+            # First, we need to translate points to the correct coordinate system
+            # Original points are in absolute coordinates
+            # First convert to coordinates relative to the original cropped piece
+            pt1_rel = (pt1[0] - piece1.bounding_rect[0], pt1[1] - piece1.bounding_rect[1])
+            pt2_rel = (pt2[0] - piece2.bounding_rect[0], pt2[1] - piece2.bounding_rect[1])
+
+            # Now apply the rotation transformation if it exists
+            if hasattr(piece1, 'rotation_matrix') and piece1.rotation_matrix is not None:
+                # Apply offset for expanded canvas
+                pt1_expanded = (pt1_rel[0] + piece1.expansion_offset[0],
+                                pt1_rel[1] + piece1.expansion_offset[1], 1)
+                # Apply rotation matrix
+                pt1_rotated = piece1.rotation_matrix @ pt1_expanded
+                pt1_rotated = pt1_rotated[:2].astype(int)
+            else:
+                pt1_rotated = pt1_rel
+
+            if hasattr(piece2, 'rotation_matrix') and piece2.rotation_matrix is not None:
+                # Apply offset for expanded canvas
+                pt2_expanded = (pt2_rel[0] + piece2.expansion_offset[0],
+                                pt2_rel[1] + piece2.expansion_offset[1], 1)
+                # Apply rotation matrix
+                pt2_rotated = piece2.rotation_matrix @ pt2_expanded
+                pt2_rotated = pt2_rotated[:2].astype(int)
+            else:
+                pt2_rotated = pt2_rel
+
+            # Now transform to visualization coordinates
+            # Calculate position within extracted region (bounds1/bounds2 are x1,y1,x2,y2)
+            rel_x1 = pt1_rotated[0] - bounds1[0]
+            rel_y1 = pt1_rotated[1] - bounds1[1]
+            rel_x2 = pt2_rotated[0] - bounds2[0]
+            rel_y2 = pt2_rotated[1] - bounds2[1]
+
+            # Apply scaling from resize
+            rel_x1 = int(rel_x1 * scale1)
+            rel_y1 = int(rel_y1 * scale1)
+            rel_x2 = int(rel_x2 * scale2)
+            rel_y2 = int(rel_y2 * scale2)
+
+            # Final position in visualization
+            vis_x1 = x_offset1 + rel_x1
+            vis_y1 = y_offset1 + rel_y1
+            vis_x2 = x_offset2 + rel_x2
+            vis_y2 = y_offset2 + rel_y2
+
+            # Get rainbow color for this point
+            total_sample_points = len(valid_indices)
+            color = rainbow_color(i, total_sample_points, with_alpha=True)
+
+
+
+            if 0 <= vis_x1 < visualization_width and 0 <= vis_y1 < visualization_height:
+                cv2.circle(visualization, (vis_x1, vis_y1), 5, color, -1)
+                cv2.putText(visualization, str(i+1), (vis_x1-5, vis_y1-5),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0, 255), 1)
+
+            # # Draw circle at the sample point position
+            # if 0 <= vis_x1 < visualization_width and 0 <= vis_y1 < visualization_height:
+            #     cv2.circle(visualization, (vis_x1, vis_y1), 5, color, -1)
+            #     cv2.putText(visualization, str(i+1), (vis_x1-5, vis_y1-5),
+            #                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0, 255), 1)
+
+            if 0 <= vis_x2 < visualization_width and 0 <= vis_y2 < visualization_height:
+                cv2.circle(visualization, (vis_x2, vis_y2), 5, color, -1)
+                cv2.putText(visualization, str(i+1), (vis_x2-5, vis_y2-5),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0, 255), 1)
+
+        # Draw sample colors for comparison
+        sample_size = 20
+        sample_spacing = 25
+        sample_y = visualization_height - 100
+
+        # Draw legend
+        cv2.putText(visualization, "Color Sample Comparison:", (50, sample_y - 30),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0, 255), 1)
+
+        # Draw color samples and connection lines
+        for i in range(min(10, len(valid_indices))):
+            idx = valid_indices[i]
+            rainbow_color_i = rainbow_color(i * 25, with_alpha=True)
+
+            # Left side sample (piece1) - with alpha
+            sample_x1 = 50 + i * (sample_size + sample_spacing)
+            color1 = (int(colors1[idx][0]), int(colors1[idx][1]), int(colors1[idx][2]), 255)
+            cv2.rectangle(visualization,
+                          (sample_x1, sample_y),
+                          (sample_x1 + sample_size, sample_y + sample_size),
+                          color1, -1)
+
+            # Add border with rainbow color to match the sample point
+            cv2.rectangle(visualization,
+                          (sample_x1-2, sample_y-2),
+                          (sample_x1 + sample_size+2, sample_y + sample_size+2),
+                          rainbow_color_i, 2)
+
+            # Right side sample (piece2) - with alpha
+            sample_x2 = divider_x + 50 + i * (sample_size + sample_spacing)
+            color2 = (int(colors2[idx][0]), int(colors2[idx][1]), int(colors2[idx][2]), 255)
+            cv2.rectangle(visualization,
+                          (sample_x2, sample_y),
+                          (sample_x2 + sample_size, sample_y + sample_size),
+                          color2, -1)
+
+            # Add border with rainbow color to match the sample point
+            cv2.rectangle(visualization,
+                          (sample_x2-2, sample_y-2),
+                          (sample_x2 + sample_size+2, sample_y + sample_size+2),
+                          rainbow_color_i, 2)
+
+            # Draw connection line with color indicating match quality
+            match_quality = 1.0 - (color_diffs[i] / max_possible_diff)
+            line_color = (0, int(255 * match_quality), int(255 * (1 - match_quality)), 255)
+            cv2.line(visualization,
+                    (sample_x1 + sample_size//2, sample_y + sample_size + 5),
+                    (sample_x2 + sample_size//2, sample_y + sample_size + 5),
+                    line_color, 2)
+
+            # Add text showing color difference
+            diff_text = f"{color_diffs[i]:.1f}"
+            text_x = (sample_x1 + sample_x2 + sample_size) // 2
+            cv2.putText(visualization, diff_text, (text_x - 15, sample_y + sample_size + 20),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0, 255), 1)
+
+        # Save the visualization to a file
+        match_filename = f"match_p{piece1.piece_id}_e{edge1_idx}_p{piece2.piece_id}_e{edge2_idx}_{score:.2f}.png"
+        match_filepath = os.path.join(output_matching, match_filename)
+        cv2.imwrite(match_filepath, visualization)
+
+        # Also display the visualization for interactive use
+        # display_image_cv2(f"Edge Match (Score: {score:.3f})", visualization)
+
     return score
 
 
-# In[540]:
+# In[683]:
 
 
-# Test the matching function only for the first piece against all others
-matches = []
+# Calculate matches for all pieces against each other
+all_matches = []
 
 # Get all pieces we want to match
 pieces_to_match = [my_puzzle.all_pieces[i] for i in my_puzzle.borders_pieces + my_puzzle.corners_pieces]
+total_pieces = len(pieces_to_match)
+print(f"Testing edge matches for {total_pieces} pieces")
 
-# Get the first piece
-first_piece = pieces_to_match[0]
-print(f"Testing piece {first_piece.piece_id} against all others")
+# Dictionary to store best match for each edge
+best_edge_matches = {}
 
-# Compare with all other pieces
-for other_piece in pieces_to_match[1:]:
-    for edge1_idx in range(len(first_piece.edges)):
-        for edge2_idx in range(len(other_piece.edges)):
-            # Compute score with debug info for the first few comparisons
-            debug = len(matches) < 5  # Debug only the first few matches
-            score = compute_edge_matching_score(first_piece, edge1_idx, other_piece, edge2_idx, debug=debug)
+# Set to track which edge pairs have been tested
+tested_pairs = set()
 
-            # Only display non-zero scores
-            if score > 0:
-                print(f"Piece {first_piece.piece_id} edge {edge1_idx}, piece {other_piece.piece_id} edge {edge2_idx}, score: {score:.3f}")
+# Compare each piece with all others
+for i, piece1 in enumerate(pieces_to_match):
 
-            # Store if score is above threshold
-            if score > 0.5:  # Adjust threshold as needed
-                matches.append({
-                    'piece1_id': first_piece.piece_id,
-                    'edge1_idx': edge1_idx,
-                    'piece2_id': other_piece.piece_id,
-                    'edge2_idx': edge2_idx,
-                    'score': score
-                })
+    #### DEBUG SELECT PIECE ####
 
-# Sort matches by score (highest first)
-matches.sort(key=lambda x: x['score'], reverse=True)
+    if piece1.piece_id != 1:
+        continue
 
-# Print top matches
-print(f"\nFound {len(matches)} potential matches with score > 0.5 for piece {first_piece.piece_id}")
-for i, match in enumerate(matches):
-    print(f"Match {i+1}: Piece {match['piece1_id']} edge {match['edge1_idx']} with "
-          f"Piece {match['piece2_id']} edge {match['edge2_idx']} - Score: {match['score']:.3f}")
+
+    print(f"\nProcessing piece {piece1.piece_id} ({i+1}/{total_pieces})")
+
+    for edge1_idx in range(len(piece1.edges)):
+        edge_key = (piece1.piece_id, edge1_idx)
+        edge_matches = []
+        edge_type = piece1.edges[edge1_idx][3]
+
+        print(f"  Testing edge {edge1_idx} (type: {edge_type})")
+
+        for j, piece2 in enumerate(pieces_to_match):
+            # Skip comparing with self
+            if piece1.piece_id == piece2.piece_id:
+                continue
+
+            for edge2_idx in range(len(piece2.edges)):
+                # Create a unique identifier for this edge pair (using sorted tuple to ensure symmetry)
+                edge_pair = tuple(sorted([
+                    (piece1.piece_id, edge1_idx),
+                    (piece2.piece_id, edge2_idx)
+                ]))
+
+                # Skip if this pair has already been tested
+                if edge_pair in tested_pairs:
+                    continue
+
+                # Mark as tested
+                tested_pairs.add(edge_pair)
+
+                # Compute score with debug output
+                score = compute_edge_matching_score(piece1, edge1_idx, piece2, edge2_idx, debug=True)
+
+                # Print each test
+                print(f"    -> Piece {piece1.piece_id} edge {edge1_idx} vs Piece {piece2.piece_id} edge {edge2_idx}: Score = {score:.3f}")
+
+                # Store if score is above threshold
+                if score > 0.5:
+                    match_info = {
+                        'piece1_id': piece1.piece_id,
+                        'edge1_idx': edge1_idx,
+                        'piece2_id': piece2.piece_id,
+                        'edge2_idx': edge2_idx,
+                        'score': score
+                    }
+                    edge_matches.append(match_info)
+                    all_matches.append(match_info)
+
+                    # Also store the match for the other piece's edge
+                    reverse_match_info = {
+                        'piece1_id': piece2.piece_id,
+                        'edge1_idx': edge2_idx,
+                        'piece2_id': piece1.piece_id,
+                        'edge2_idx': edge1_idx,
+                        'score': score
+                    }
+                    if (piece2.piece_id, edge2_idx) not in best_edge_matches or score > best_edge_matches[(piece2.piece_id, edge2_idx)]['score']:
+                        best_edge_matches[(piece2.piece_id, edge2_idx)] = reverse_match_info
+
+        # Sort matches for this edge by score (highest first)
+        edge_matches.sort(key=lambda x: x['score'], reverse=True)
+
+        # Store best match for this edge
+        if edge_matches:
+            best_edge_matches[edge_key] = edge_matches[0]
+            print(f"  Best match for edge {edge1_idx}: Piece {edge_matches[0]['piece2_id']} edge {edge_matches[0]['edge2_idx']} - Score: {edge_matches[0]['score']:.3f}")
+        else:
+            print(f"  No matches found for edge {edge1_idx} with score > 0.5")
+
+# Print summary of best matches for each edge
+print("\n===== SUMMARY OF BEST MATCHES FOR EACH EDGE =====")
+for edge_key, match in sorted(best_edge_matches.items()):
+    piece_id, edge_idx = edge_key
+    print(f"Piece {piece_id} edge {edge_idx} -> Best match: Piece {match['piece2_id']} edge {match['edge2_idx']} - Score: {match['score']:.3f}")
 
 # Store matches in puzzle object for later use
-my_puzzle.edge_matches = matches
+my_puzzle.all_edge_matches = all_matches
+my_puzzle.edge_match_lookup = best_edge_matches
+
+print("\nMatch calculation complete!")
+
+
+# In[684]:
+
+
+# Sort all matches by score (highest first)
+all_matches.sort(key=lambda x: x['score'], reverse=True)
+
+# Print overall results
+print(f"\nFound {len(all_matches)} total potential matches with score > 0.5")
+
+# Create a dictionary mapping (piece_id, edge_idx) to its best matches for quick lookup
+edge_match_lookup = {}
+for match in all_matches:
+    key = (match['piece1_id'], match['edge1_idx'])
+    if key not in edge_match_lookup:
+        edge_match_lookup[key] = []
+    edge_match_lookup[key].append(match)
+
+# Sort the matches for each edge by score
+for key in edge_match_lookup:
+    edge_match_lookup[key].sort(key=lambda x: x['score'], reverse=True)
+
+# Print top 3 matches for each edge
+print("\nTop matches for each edge:")
+for key in sorted(edge_match_lookup.keys()):
+    piece_id, edge_idx = key
+    matches = edge_match_lookup[key][:3]  # Get top 3 matches for this edge
+
+    print(f"Piece {piece_id} edge {edge_idx} - Top matches:")
+    for i, match in enumerate(matches):
+        print(f"  Match {i+1}: with Piece {match['piece2_id']} edge {match['edge2_idx']} - Score: {match['score']:.3f}")
+
+# Store matches in puzzle object for later use
+my_puzzle.all_edge_matches = all_matches
+my_puzzle.edge_match_lookup = edge_match_lookup
+
+print("Match calculation complete and stored in my_puzzle.all_edge_matches and my_puzzle.edge_match_lookup")
+
+
+# In[685]:
+
+
+puzzle_reconstruction = Canvas(
+    width=1800,
+    height=1500,
+    max_pieces_per_row=puzzle_r,
+    column_spacing=100,
+    row_spacing=50,
+    margin=200
+)
+
+
+
+corner_piece_id = 17
+
+corner_piece = my_puzzle.all_pieces[corner_piece_id]
+print(f"Using corner piece {corner_piece_id}")
+
+# # Disable ID label to avoid cluttering
+# corner_piece.skip_id_label = True
+
+
+# In[686]:
+
+
+flat_edge_indices = [i for i, edge_data in enumerate(corner_piece.edges) if edge_data[3] == 0]
+print(f"Flat edges for piece {corner_piece_id}: {flat_edge_indices}")
+
+for c in corner_piece.edges:
+    print(c)
+
+target_flat_edges = [0, 3] # North and West
+
+print(target_flat_edges)
+
+
+# In[687]:
+
+
+rotations_needed = None
+
+for r in range(4):
+    # Calculate where the flat edges would be after r rotations
+    rotated_flat_edges = [(idx + r) % 4 for idx in flat_edge_indices]
+    rotated_flat_edges.sort()
+
+    print(r, rotated_flat_edges, sorted(target_flat_edges))
+
+    if rotated_flat_edges == sorted(target_flat_edges):
+        rotations_needed = r
+        break
+
+
+# In[688]:
+
+
+print(f"Placing corner piece {corner_piece_id} with {rotations_needed * 90}° rotation")
+
+# Place the piece with the calculated rotation
+# This should put the flat edges in North (0) and West (3) positions
+puzzle_reconstruction.place_piece(corner_piece, 0, 0, rotations=rotations_needed)
+
+# Print verification
+flat_edge_indices_after = [(i + rotations_needed) % 4 for i in flat_edge_indices]
+print(f"Flat edges after rotation: {flat_edge_indices_after}")
+
+# Track placed pieces
+placed_pieces = {corner_piece_id}
+grid = {(0, 0): corner_piece_id}
+
+# Save the result
+result_path = os.path.join(output_canvas, "corner_piece_oriented.png")
+puzzle_reconstruction.save(result_path)
+print(f"Result saved to {result_path}")
+
+# Display the canvas in the notebook
+puzzle_reconstruction.display()
+
+print("\nCorner piece placement complete!")
+
+
+# In[ ]:
+
+
+
 
