@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[783]:
+# In[220]:
 
 
 import cv2
@@ -14,16 +14,14 @@ from scipy.ndimage import gaussian_filter1d
 import pandas as pd
 import math
 
-from detailedmatchingV2 import placed_pieces
 
-
-# In[784]:
+# In[221]:
 
 
 image_path = "images/hack2.png"
 
 
-# In[785]:
+# In[222]:
 
 
 def display_image(title, image):
@@ -37,7 +35,7 @@ def display_image(title, image):
     plt.show()
 
 
-# In[786]:
+# In[223]:
 
 
 # ## Basic reading image and display
@@ -47,7 +45,7 @@ if original_image is None:
     raise ValueError(f"Could not read image from {image_path}")
 
 
-# In[787]:
+# In[224]:
 
 
 # ## Grayscale conversion
@@ -56,7 +54,7 @@ gray_image = cv2.cvtColor(original_image, cv2.COLOR_BGR2GRAY)
 # display_image("Grayscale Image", gray_image)
 
 
-# In[788]:
+# In[225]:
 
 
 # print("Threshold to separate pieces from background")
@@ -64,7 +62,7 @@ _, binary_image = cv2.threshold(gray_image, 30, 255, cv2.THRESH_BINARY)
 # display_image("Binary Image", binary_image)
 
 
-# In[789]:
+# In[226]:
 
 
 kernel = np.ones((12, 12), np.uint8)
@@ -76,7 +74,7 @@ morph_image = cv2.morphologyEx(morph_image, cv2.MORPH_OPEN, kernel)
 # display_image("Morph Operations", morph_image)
 
 
-# In[790]:
+# In[227]:
 
 
 # print("Filling holes in puzzle pieces")
@@ -86,7 +84,7 @@ for cnt in contours_fill:
 # display_image("Filled Holes", morph_image)
 
 
-# In[791]:
+# In[228]:
 
 
 # ## Contours finding
@@ -94,7 +92,7 @@ contours, _ = cv2.findContours(morph_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_
 # print(f"Found {len(contours)} potential puzzle pieces")
 
 
-# In[792]:
+# In[229]:
 
 
 # print("Filtering contours by size")
@@ -105,7 +103,7 @@ if len(contours) > 1:
 # print(f"After filtering: {len(contours)} puzzle pieces")
 
 
-# In[793]:
+# In[230]:
 
 
 # print("Drawing contours of the original image")
@@ -113,7 +111,7 @@ contour_image = original_image.copy()
 # cv2.drawContours(contour_image, contours, -1, (0, 255, 0), 2)
 
 
-# In[794]:
+# In[231]:
 
 
 output_folder_pieces = "images/extracted_pieces"
@@ -148,7 +146,7 @@ output_tests = "images/tests"
 os.makedirs(output_tests, exist_ok=True)
 
 
-# In[795]:
+# In[232]:
 
 
 class Edge:
@@ -163,7 +161,7 @@ class Edge:
         self.color_edge_line = None
 
 
-# In[796]:
+# In[233]:
 
 
 class puzzlePiece:
@@ -189,6 +187,14 @@ class puzzlePiece:
         self.relative_mask = None
         self.transparent_image = None
 
+        self.edge_direction_map = None
+        self.final_edge_direction_map = None
+
+        self.matching_edges = {}
+        self.sorted_score = None
+
+        self.flat_edge_id = None
+
         self.rotation_angle = None
         self.rotation_matrix = None
         self.expanded_image = None
@@ -211,7 +217,7 @@ class puzzlePiece:
         return ret
 
 
-# In[797]:
+# In[234]:
 
 
 class Puzzle:
@@ -225,13 +231,13 @@ class Puzzle:
         self.middle_pieces = []
 
 
-# In[798]:
+# In[235]:
 
 
 my_puzzle = Puzzle()
 
 
-# In[799]:
+# In[236]:
 
 
 for contours_indices in range(len(contours)):
@@ -565,7 +571,7 @@ for contours_indices in range(len(contours)):
     my_puzzle.all_pieces[selected_image_index] = this_piece
 
 
-# In[800]:
+# In[237]:
 
 
 print("----------- STATS ---------- ")
@@ -579,7 +585,7 @@ print("Middles: ", my_puzzle.middle_pieces)
 
 # ## Algorithm to find the puzzle size
 
-# In[801]:
+# In[238]:
 
 
 def find_puzzle_size(total, corners, borders, middles):
@@ -594,7 +600,7 @@ def find_puzzle_size(total, corners, borders, middles):
     return None
 
 
-# In[802]:
+# In[239]:
 
 
 puzzle_c, puzzle_r = find_puzzle_size(len(my_puzzle.all_pieces), len(my_puzzle.corners_pieces), len(my_puzzle.borders_pieces), len(my_puzzle.middle_pieces))
@@ -602,7 +608,7 @@ print(puzzle_r)
 print(puzzle_c)
 
 
-# In[803]:
+# In[240]:
 
 
 def display_image_cv2(title, image):
@@ -624,7 +630,7 @@ def display_image_cv2(title, image):
     cv2.destroyAllWindows()
 
 
-# In[804]:
+# In[241]:
 
 
 # target_index = 5
@@ -635,7 +641,7 @@ def display_image_cv2(title, image):
 # 
 # pieces with a straight edge -> y axis orientation
 
-# In[805]:
+# In[242]:
 
 
 # Create a new white canvas to place all oriented pieces
@@ -658,7 +664,7 @@ max_height_in_row = 0
 piece_count = 0
 
 
-# In[806]:
+# In[243]:
 
 
 class Canvas:
@@ -951,7 +957,7 @@ class Canvas:
         return None
 
 
-# In[807]:
+# In[244]:
 
 
 # First process and reorient all pieces
@@ -1042,6 +1048,8 @@ for index in (my_puzzle.borders_pieces + my_puzzle.corners_pieces):
 
     # Store rotated image
     test_piece.rotated_image = rotated_image
+
+    edge_direction_map = {}
 
     # Calculate the rotated points (need to adjust original points with offset)
     p1_offset = (point_1[0] + x_offset, point_1[1] + y_offset)
@@ -1135,6 +1143,21 @@ for index in (my_puzzle.borders_pieces + my_puzzle.corners_pieces):
         cv2.putText(colored_edges_image, str(edge_idx), mid_point,
                     cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0, 255), 2)
 
+
+    for edge_idx in range(len(test_piece.edges)):
+        if edge_idx == test_piece.flat_edge_id:
+            final_direction = 3  # WEST
+        else:
+            # Calculate how many steps we are from the flat edge (going backwards)
+            steps_from_flat = (test_piece.flat_edge_id - edge_idx) % 4
+            # Each step backwards adds 1 to direction (counter-clockwise from WEST)
+            final_direction = (3 + steps_from_flat) % 4
+
+        edge_direction_map[edge_idx] = final_direction
+
+    test_piece.edge_direction_map = edge_direction_map
+
+
     # Use the colored edges image instead of rotated_image for placement
     test_piece.rotated_image = colored_edges_image
 
@@ -1156,7 +1179,7 @@ for index in (my_puzzle.borders_pieces + my_puzzle.corners_pieces):
 print("All pieces oriented and processed!")
 
 
-# In[808]:
+# In[245]:
 
 
 # Create a canvas object with custom spacing
@@ -1177,11 +1200,13 @@ canvas_obj.save(canvas_path)
 print(f"Canvas saved to {canvas_path}")
 
 
-# In[809]:
+# In[246]:
 
 
 # Edge matching function to compute a matching score between two puzzle piece edges
 def compute_edge_matching_score(piece1, edge1_idx, piece2, edge2_idx, debug=False):
+
+    debug = False
     # Get edge types
     edge1_type = piece1.edges[edge1_idx][3]
     edge2_type = piece2.edges[edge2_idx][3]
@@ -1190,8 +1215,6 @@ def compute_edge_matching_score(piece1, edge1_idx, piece2, edge2_idx, debug=Fals
     if edge1_type == 0 or edge2_type == 0:
         if debug:
             print(f"Edge {edge1_idx} of piece {piece1.piece_id} or edge {edge2_idx} of piece {piece2.piece_id} is flat. Score = 0")
-
-
         return 0
 
     # Check if both edges are the same type (both IN or both OUT)
@@ -1200,15 +1223,40 @@ def compute_edge_matching_score(piece1, edge1_idx, piece2, edge2_idx, debug=Fals
             print(f"Both edges are type {edge1_type}. Score = 0")
         return 0
 
-
     # Check if pieces are border or corner pieces (have at least one flat edge)
     piece1_flat_edges = [i for i, edge in enumerate(piece1.edges) if edge[3] == 0]
     piece2_flat_edges = [i for i, edge in enumerate(piece2.edges) if edge[3] == 0]
 
     piece1_is_border = len(piece1_flat_edges) == 1
     piece1_is_corner = len(piece1_flat_edges) == 2
+    piece1_is_middle = len(piece1_flat_edges) == 0
     piece2_is_border = len(piece2_flat_edges) == 1
     piece2_is_corner = len(piece2_flat_edges) == 2
+    piece2_is_middle = len(piece2_flat_edges) == 0
+
+    # NEW: Add middle piece constraints
+    # Middle pieces cannot match with corner pieces
+    if (piece1_is_middle and piece2_is_corner) or (piece2_is_middle and piece1_is_corner):
+        if debug:
+            print(f"Middle piece cannot match with corner piece. Score = 0")
+        return 0
+
+    # If middle piece is matching with border piece, must be the edge opposite to flat edge
+    if piece1_is_middle and piece2_is_border:
+        flat_edge2_idx = piece2_flat_edges[0]
+        opposite_edge2_idx = (flat_edge2_idx + 2) % 4
+        if edge2_idx != opposite_edge2_idx:
+            if debug:
+                print(f"Middle piece {piece1.piece_id} can only match border piece {piece2.piece_id} on edge opposite to flat edge. Score = 0")
+            return 0
+
+    if piece2_is_middle and piece1_is_border:
+        flat_edge1_idx = piece1_flat_edges[0]
+        opposite_edge1_idx = (flat_edge1_idx + 2) % 4
+        if edge1_idx != opposite_edge1_idx:
+            if debug:
+                print(f"Middle piece {piece2.piece_id} can only match border piece {piece1.piece_id} on edge opposite to flat edge. Score = 0")
+            return 0
 
     # Only apply the "opposite to flat edge" restriction for border pieces, not corners
     if (piece1_is_border and piece2_is_border):
@@ -1316,10 +1364,21 @@ def compute_edge_matching_score(piece1, edge1_idx, piece2, edge2_idx, debug=Fals
     end_corner2 = piece2.edges[edge2_idx][2]
 
     # Get rotated corner coordinates
-    start_rot1 = piece1.rotated_corners[edge1_idx]
-    end_rot1 = piece1.rotated_corners[(edge1_idx + 1) % len(piece1.rotated_corners)]
-    start_rot2 = piece2.rotated_corners[edge2_idx]
-    end_rot2 = piece2.rotated_corners[(edge2_idx + 1) % len(piece2.rotated_corners)]
+    if hasattr(piece1, 'rotated_corners') and piece1.rotated_corners:
+        start_rot1 = piece1.rotated_corners[edge1_idx]
+        end_rot1 = piece1.rotated_corners[(edge1_idx + 1) % len(piece1.rotated_corners)]
+    else:
+        # Use relative corners for middle pieces
+        start_rot1 = piece1.relative_contour[piece1.edges[edge1_idx][1]][0]
+        end_rot1 = piece1.relative_contour[piece1.edges[edge1_idx][2]][0]
+
+    if hasattr(piece2, 'rotated_corners') and piece2.rotated_corners:
+        start_rot2 = piece2.rotated_corners[edge2_idx]
+        end_rot2 = piece2.rotated_corners[(edge2_idx + 1) % len(piece2.rotated_corners)]
+    else:
+        # Use relative corners for middle pieces
+        start_rot2 = piece2.relative_contour[piece2.edges[edge2_idx][1]][0]
+        end_rot2 = piece2.relative_contour[piece2.edges[edge2_idx][2]][0]
 
     # Get rotated contour points between the corners for each edge
     def get_contour_between_corners(piece, start_idx, end_idx):
@@ -1440,15 +1499,15 @@ def compute_edge_matching_score(piece1, edge1_idx, piece2, edge2_idx, debug=Fals
     colors_and_points2 = [get_color_at_point(piece2, pt, inward_offset) for pt in sample_points2]
 
 
-    print("---------DEBUGGING---------")
-    print(f"len colors and points 1 {len(colors_and_points1)}")
+    # print("---------DEBUGGING---------")
+    # print(f"len colors and points 1 {len(colors_and_points1)}")
 
     colors1 = np.array([cp[0] for cp in colors_and_points1])
 
-    print(colors1)
+    # print(colors1)
 
     sample_inward_points1 = [cp[1] for cp in colors_and_points1]
-    print(sample_inward_points1)
+    # print(sample_inward_points1)
     colors2 = np.array([cp[0] for cp in colors_and_points2])
     sample_inward_points2 = [cp[1] for cp in colors_and_points2]
 
@@ -1470,7 +1529,7 @@ def compute_edge_matching_score(piece1, edge1_idx, piece2, edge2_idx, debug=Fals
             print(f"Not enough valid color points. Score = 0")
         return 0
 
-    print("---------- #### DEBUG COMPUTING COLORS DIFF ------------")
+    # print("---------- #### DEBUG COMPUTING COLORS DIFF ------------")
 
 
     ##
@@ -1848,113 +1907,81 @@ def compute_edge_matching_score(piece1, edge1_idx, piece2, edge2_idx, debug=Fals
     return score
 
 
-# In[838]:
+# In[247]:
 
 
-# Calculate matches for all pieces against each other
 all_matches = []
 
-# Get all pieces we want to match
-pieces_to_match = [my_puzzle.all_pieces[i] for i in my_puzzle.borders_pieces + my_puzzle.corners_pieces]
-total_pieces = len(pieces_to_match)
-print(f"Testing edge matches for {total_pieces} pieces")
+pieces_to_match = [my_puzzle.all_pieces[i] for i in
+                   my_puzzle.borders_pieces + my_puzzle.corners_pieces + my_puzzle.middle_pieces]
 
-# Dictionary to store best match for each edge
-best_edge_matches = {}
-
-# Set to track which edge pairs have been tested
 tested_pairs = set()
 
-# Compare each piece with all others
 for i, piece1 in enumerate(pieces_to_match):
-
-    #### DEBUG SELECT PIECE ####
-
-    # if piece1.piece_id not in [1, 2, 3, 4, 5, 6, 7, 8, 9]:
-    #     continue
-
-
-    print(f"\nProcessing piece {piece1.piece_id} ({i+1}/{total_pieces})")
-
     for edge1_idx in range(len(piece1.edges)):
-        edge_key = (piece1.piece_id, edge1_idx)
-        edge_matches = []
-        edge_type = piece1.edges[edge1_idx][3]
-
-        print(f"  Testing edge {edge1_idx} (type: {edge_type})")
-
         for j, piece2 in enumerate(pieces_to_match):
-            # Skip comparing with self
             if piece1.piece_id == piece2.piece_id:
                 continue
 
             for edge2_idx in range(len(piece2.edges)):
-                # Create a unique identifier for this edge pair (using sorted tuple to ensure symmetry)
                 edge_pair = tuple(sorted([
                     (piece1.piece_id, edge1_idx),
                     (piece2.piece_id, edge2_idx)
                 ]))
 
-                # Skip if this pair has already been tested
                 if edge_pair in tested_pairs:
                     continue
 
-                # Mark as tested
                 tested_pairs.add(edge_pair)
 
-                # Compute score with debug output
                 score = compute_edge_matching_score(piece1, edge1_idx, piece2, edge2_idx, debug=False)
 
-                # Print each test
-                print(f"    -> Piece {piece1.piece_id} edge {edge1_idx} vs Piece {piece2.piece_id} edge {edge2_idx}: Score = {score:.3f}")
+                match_info = {
+                    'piece1_id': piece1.piece_id,
+                    'edge1_idx': edge1_idx,
+                    'piece2_id': piece2.piece_id,
+                    'edge2_idx': edge2_idx,
+                    'score': score
+                }
+                all_matches.append(match_info)
 
-                # Store if score is above threshold
-                if score > 0.5:
-                    match_info = {
-                        'piece1_id': piece1.piece_id,
-                        'edge1_idx': edge1_idx,
-                        'piece2_id': piece2.piece_id,
-                        'edge2_idx': edge2_idx,
-                        'score': score
-                    }
-                    edge_matches.append(match_info)
-                    all_matches.append(match_info)
+                # Update matching_edges for both pieces
+                # Update matching_edges for both pieces (only if score > 0)
+                if score > 0:
+                    # For piece1: store from perspective of edge1_idx
+                    if edge1_idx not in piece1.matching_edges:
+                        piece1.matching_edges[edge1_idx] = {}
+                    if piece2.piece_id not in piece1.matching_edges[edge1_idx]:
+                        piece1.matching_edges[edge1_idx][piece2.piece_id] = {}
+                    piece1.matching_edges[edge1_idx][piece2.piece_id][edge2_idx] = score
 
-                    # Also store the match for the other piece's edge
-                    reverse_match_info = {
-                        'piece1_id': piece2.piece_id,
-                        'edge1_idx': edge2_idx,
-                        'piece2_id': piece1.piece_id,
-                        'edge2_idx': edge1_idx,
-                        'score': score
-                    }
-                    if (piece2.piece_id, edge2_idx) not in best_edge_matches or score > best_edge_matches[(piece2.piece_id, edge2_idx)]['score']:
-                        best_edge_matches[(piece2.piece_id, edge2_idx)] = reverse_match_info
+                    # For piece2: store from perspective of edge2_idx
+                    if edge2_idx not in piece2.matching_edges:
+                        piece2.matching_edges[edge2_idx] = {}
+                    if piece1.piece_id not in piece2.matching_edges[edge2_idx]:
+                        piece2.matching_edges[edge2_idx][piece1.piece_id] = {}
+                    piece2.matching_edges[edge2_idx][piece1.piece_id][edge1_idx] = score
 
-        # Sort matches for this edge by score (highest first)
-        edge_matches.sort(key=lambda x: x['score'], reverse=True)
-
-        # Store best match for this edge
-        if edge_matches:
-            best_edge_matches[edge_key] = edge_matches[0]
-            print(f"  Best match for edge {edge1_idx}: Piece {edge_matches[0]['piece2_id']} edge {edge_matches[0]['edge2_idx']} - Score: {edge_matches[0]['score']:.3f}")
-        else:
-            print(f"  No matches found for edge {edge1_idx} with score > 0.5")
-
-# Print summary of best matches for each edge
-print("\n===== SUMMARY OF BEST MATCHES FOR EACH EDGE =====")
-for edge_key, match in sorted(best_edge_matches.items()):
-    piece_id, edge_idx = edge_key
-    print(f"Piece {piece_id} edge {edge_idx} -> Best match: Piece {match['piece2_id']} edge {match['edge2_idx']} - Score: {match['score']:.3f}")
-
-# Store matches in puzzle object for later use
 my_puzzle.all_edge_matches = all_matches
-my_puzzle.edge_match_lookup = best_edge_matches
 
-print("\nMatch calculation complete!")
+# Sort matches for each piece
+for piece in pieces_to_match:
+    piece.sorted_matches = {}
+
+    for edge_id in piece.matching_edges:
+        sorted_matches = []
+        for other_piece_id, other_edges in piece.matching_edges[edge_id].items():
+            for other_edge_id, score in other_edges.items():
+                sorted_matches.append((other_piece_id, other_edge_id, score))
+
+        # Sort by score (highest first)
+        sorted_matches.sort(key=lambda x: x[2], reverse=True)
+        piece.sorted_matches[edge_id] = sorted_matches
+
+my_puzzle.all_edge_matches = all_matches
 
 
-# In[811]:
+# In[248]:
 
 
 # Sort all matches by score (highest first)
@@ -1992,7 +2019,7 @@ my_puzzle.edge_match_lookup = edge_match_lookup
 print("Match calculation complete and stored in my_puzzle.all_edge_matches and my_puzzle.edge_match_lookup")
 
 
-# In[812]:
+# In[249]:
 
 
 class GridCanvas:
@@ -2127,7 +2154,7 @@ class GridCanvas:
         print(f"Grid arrangement saved to {filepath}")
 
 
-# In[813]:
+# In[250]:
 
 
 # Create a grid canvas
@@ -2171,53 +2198,21 @@ grid_canvas.print_grid()
 grid_canvas.save("my_puzzle_arrangement.png")
 
 
-# In[859]:
+# In[262]:
 
-
-# Create a grid canvas
-reconstruction_canvas = GridCanvas(
-    width=1800,
-    height=1200,
-    rows=puzzle_r,
-    cols=puzzle_c,
-    column_spacing=250,
-    row_spacing=250,
-    margin=100
-)
-
-placed_pieces =[]
-
-reconstruction_canvas.place_piece(17, 0, 0, rotation=1)
-
-placed_pieces.append(17)
-
-# # Print the grid to console
-# reconstruction_canvas.print_grid()
-#
-# # When ready to save, the render_grid() function is called by save() to create the visualization
-# reconstruction_canvas.save("reconstruction.png")
-
-
-# In[860]:
-
-
-# In[689]:
 
 def find_adjacent_coordinates_to_explore(rep_array, placed_pieces):
     """
     Find all valid adjacent coordinates to explore next.
-    Returns a list of (row, col) coordinates that are:
-    1. Adjacent to placed pieces
-    2. Not already occupied
-    3. Within grid bounds
+    Returns a list of (row, col) tuples for empty cells adjacent to placed pieces.
     """
     rows = len(rep_array)
     cols = len(rep_array[0])
 
-    # Directions: right, down, left, up
-    directions = [(0, 1), (1, 0), (0, -1), (-1, 0)]
+    # Directions: NORTH, EAST, SOUTH, WEST
+    directions = [(-1, 0), (0, 1), (1, 0), (0, -1)]
 
-    adjacent_coords = set()
+    adjacent_coords = set()  # Use set to avoid duplicates
 
     # Check all placed pieces for adjacent empty cells
     for row in range(rows):
@@ -2238,295 +2233,685 @@ def find_adjacent_coordinates_to_explore(rep_array, placed_pieces):
                     if rep_array[new_row][new_col][0] == -1:
                         adjacent_coords.add((new_row, new_col))
 
-    # Convert to list and return
     return list(adjacent_coords)
 
 
-# In[861]:
+# In[263]:
 
 
-def find_adjacent_border_coordinates_to_explore(rep_array, placed_pieces):
+def get_adjacent_pieces_for_coordinate(adjacent_info, target_row, target_col):
     """
-    Find all valid adjacent coordinates along the border to explore next.
-    Excludes inner coordinates that wouldn't be part of the puzzle border.
+    Helper function to get all pieces adjacent to a specific coordinate.
+    Returns list of [piece_id, direction] for the given coordinate.
     """
-    # Get all adjacent coordinates
-    all_adjacent = find_adjacent_coordinates_to_explore(rep_array, placed_pieces)
+    adjacent_pieces = []
+    for piece_id, (row, col), direction in adjacent_info:
+        if row == target_row and col == target_col:
+            adjacent_pieces.append([piece_id, direction])
 
-    rows = len(rep_array)
-    cols = len(rep_array[0])
-
-    # Filter to keep only border coordinates
-    border_adjacent = []
-    for row, col in all_adjacent:
-        # A coordinate is on the border if it's at the edge of the grid
-        # OR if it has empty neighbors that would be outside the puzzle
-        if row == 0 or row == rows-1 or col == 0 or col == cols-1:
-            border_adjacent.append((row, col))
-
-    return border_adjacent
+    return adjacent_pieces
 
 
-# In[874]:
+# In[264]:
 
 
-def suggest_next_piece_for_border(adjacent_coords, placed_pieces, my_puzzle, reconstruction_canvas):
+def print_adjacent_analysis(adjacent_info):
     """
-    Simply displays the available piece IDs for each adjacent border coordinate.
+    Print a nice analysis of the adjacent coordinates.
     """
-    print("Available border positions to explore:", adjacent_coords)
-    print("Pieces already placed:", placed_pieces)
+    direction_names = ["NORTH", "EAST", "SOUTH", "WEST"]
 
-    # Get unplaced border and corner pieces only
-    available_pieces = [
-        piece_id for piece_id in (my_puzzle.borders_pieces + my_puzzle.corners_pieces)
-        if piece_id not in placed_pieces
-    ]
+    print("Adjacent coordinates analysis:")
+    print("=" * 50)
 
-    print("Available pieces to place:", available_pieces)
+    # Group by coordinates
+    coord_groups = {}
+    for piece_id, coords, direction in adjacent_info:
+        if coords not in coord_groups:
+            coord_groups[coords] = []
+        coord_groups[coords].append([piece_id, direction])
 
-    # Print orientation information for the last placed piece
-    if placed_pieces:
-        last_piece_id = placed_pieces[-1]
-        last_piece = my_puzzle.all_pieces[last_piece_id]
+    for coords, adjacent_pieces in sorted(coord_groups.items()):
+        row, col = coords
+        print(f"Coordinate ({row}, {col}):")
+        for piece_id, direction in adjacent_pieces:
+            # The direction is FROM the piece TO the coordinate
+            # So if direction is EAST, the piece is to the WEST of the coordinate
+            opposite_direction = (direction + 2) % 4
+            print(f"  - Piece {piece_id} is to the {direction_names[opposite_direction]} (direction {direction})")
+        print()
 
-        # Find the flat edge that was rotated to WEST
-        flat_edge_id = last_piece.flat_edge_id
 
-        # Define the directions based on the edge indices for arranged orientation
-        # For counter-clockwise order when flat_edge is WEST:
-        # 0: EAST, 1: NORTH, 2: WEST, 3: SOUTH
-        directions = ["EAST", "NORTH", "WEST", "SOUTH"]
+# In[265]:
 
-        print("-------- arranged orientation --------")
-        print(f"Orientation of piece {last_piece_id}:")
-        print(f"Flat edge {flat_edge_id} is oriented WEST")
 
-        # Print orientation of all edges in arranged orientation
-        for i, edge_data in enumerate(last_piece.edges):
-            edge_id = edge_data[0]
-            edge_type = edge_data[3]
-            edge_type_name = {0: "FLAT", 1: "IN", 2: "OUT"}.get(edge_type, "UNKNOWN")
+# Example usage with your current setup:
+def test_adjacent_finder(grid_canvas):
+    """
+    Test the enhanced adjacent finder with your current grid setup.
+    """
+    placed_pieces = []
 
-            # Calculate the orientation after rotation to align flat_edge with WEST
-            orientation_index = (i - flat_edge_id + 2) % 4
-            orientation = directions[orientation_index]
+    # Find pieces that are currently placed (not -1)
+    for row in range(len(grid_canvas.rep_array)):
+        for col in range(len(grid_canvas.rep_array[0])):
+            piece_id, rotation = grid_canvas.rep_array[row][col]
+            if piece_id != -1:
+                placed_pieces.append(piece_id)
 
-            print(f"Edge {i} (type: {edge_type_name}) is facing {orientation}")
+    print(f"Currently placed pieces: {placed_pieces}")
 
-        # Now account for the canvas rotation
-        print("\n-------- canvas orientation --------")
+    # Find adjacent coordinates
+    adjacent_info = find_adjacent_coordinates_to_explore(grid_canvas.rep_array, placed_pieces)
 
-        # Find the rotation applied to this piece in the canvas and its position
-        last_piece_position = None
-        canvas_orientations = {}
+    print(f"\nAdjacent coordinates (raw): {adjacent_info}")
 
-        for row in range(len(reconstruction_canvas.rep_array)):
-            for col in range(len(reconstruction_canvas.rep_array[0])):
-                piece_id, canvas_rotation = reconstruction_canvas.rep_array[row][col]
-                if piece_id == last_piece_id:
-                    # Found the piece in the canvas
-                    last_piece_position = (row, col)
-                    print(f"Piece {last_piece_id} in canvas at position ({row}, {col}) with rotation {canvas_rotation}")
+    # Print nice analysis
+    print_adjacent_analysis(adjacent_info)
 
-                    print(f"After canvas rotation of {canvas_rotation * 90}° clockwise:")
+    return adjacent_info
 
-                    # Print orientation of all edges after canvas rotation
-                    for i, edge_data in enumerate(last_piece.edges):
-                        edge_id = edge_data[0]
-                        edge_type = edge_data[3]
-                        edge_type_name = {0: "FLAT", 1: "IN", 2: "OUT"}.get(edge_type, "UNKNOWN")
 
-                        # Calculate orientation after both arranged rotation and canvas rotation
-                        # For clockwise rotation: each rotation shifts directions by 1 position right
-                        arranged_orientation_index = (i - flat_edge_id + 2) % 4
+# In[266]:
 
-                        # For clockwise rotation of X units, subtract X from the index
-                        # (or equivalently, add (4-X)) because we're moving in the opposite direction
-                        canvas_orientation_index = (arranged_orientation_index - canvas_rotation) % 4
-                        canvas_orientation = directions[canvas_orientation_index]
 
-                        # Store the canvas orientation for each edge
-                        canvas_orientations[i] = {
-                            'direction': canvas_orientation,
-                            'type': edge_type,
-                            'type_name': edge_type_name
-                        }
+def display_piece_matches(piece):
+    """
+    Display piece matching edges in a readable format
+    """
+    print(f"Piece {piece.piece_id} matching edges:")
+    print("=" * 40)
 
-                        print(f"Edge {i} (type: {edge_type_name}) is facing {canvas_orientation}")
+    if not piece.sorted_matches:
+        print("No matches found")
+        return
 
+    for edge_id in sorted(piece.sorted_matches.keys()):
+        print(f"\nEdge {edge_id}:")
+
+        matches = piece.sorted_matches[edge_id]
+        if not matches:
+            print("  No matches")
+            continue
+
+        for other_piece_id, other_edge_id, score in matches:
+            print(f"  -> matching with piece {other_piece_id}, edge {other_edge_id}, score: {score:.4f}")
+
+
+# In[291]:
+
+
+def get_spiral_coordinate(counter, rows, cols):
+    """
+    Generate the coordinate at position 'counter' in a spiral traversal.
+    Returns (row, col) tuple for the given counter position.
+    """
+    if counter < 0 or counter >= rows * cols:
+        return None
+
+    # Generate all coordinates in spiral order
+    coordinates = []
+    top, bottom, left, right = 0, rows - 1, 0, cols - 1
+
+    while top <= bottom and left <= right:
+        # Go right along the top row
+        for col in range(left, right + 1):
+            coordinates.append((top, col))
+        top += 1
+
+        # Go down along the right column
+        for row in range(top, bottom + 1):
+            coordinates.append((row, right))
+        right -= 1
+
+        # Go left along the bottom row
+        if top <= bottom:
+            for col in range(right, left - 1, -1):
+                coordinates.append((bottom, col))
+            bottom -= 1
+
+        # Go up along the left column
+        if left <= right:
+            for row in range(bottom, top - 1, -1):
+                coordinates.append((row, left))
+            left += 1
+
+    return coordinates[counter] if counter < len(coordinates) else None
+
+
+# In[336]:
+
+
+def get_nearby_occupied_cells(grid_canvas, target_row, target_col):
+    """
+    Get nearby occupied cells (non-diagonal, within bounds) and their directions
+    relative to the target cell.
+
+    Returns: list of tuples [(piece_id, direction_name, neighbor_row, neighbor_col), ...]
+    where direction_name is the direction FROM the target cell TO the neighbor cell
+    """
+    rows = grid_canvas.rows
+    cols = grid_canvas.cols
+
+    # Directions: NORTH, EAST, SOUTH, WEST
+    # Each direction is (row_delta, col_delta) FROM target TO neighbor
+    directions = [(-1, 0), (0, 1), (1, 0), (0, -1)]
+    direction_names = ["NORTH", "EAST", "SOUTH", "WEST"]
+
+    nearby_occupied = []
+
+    for i, (dr, dc) in enumerate(directions):
+        neighbor_row = target_row + dr
+        neighbor_col = target_col + dc
+
+        # Check if neighbor is within bounds
+        if 0 <= neighbor_row < rows and 0 <= neighbor_col < cols:
+            piece_id, rotation = grid_canvas.rep_array[neighbor_row][neighbor_col]
+
+            # Check if neighbor is occupied (not -1)
+            if piece_id != -1:
+                # The direction name is where the neighbor is relative to target
+                # So if we go NORTH from target to find neighbor,
+                # the neighbor is NORTH of the target
+                neighbor_direction = direction_names[i]  # Same direction
+                nearby_occupied.append((piece_id, neighbor_direction, neighbor_row, neighbor_col))
+
+    return nearby_occupied
+
+
+# In[337]:
+
+
+def get_direction_name_from_index(index):
+    """Convert direction index to name"""
+    direction_names = ["NORTH", "EAST", "SOUTH", "WEST"]
+    return direction_names[index]
+
+def get_direction_index_from_name(name):
+    """Convert direction name to index"""
+    direction_map = {"NORTH": 0, "EAST": 1, "SOUTH": 2, "WEST": 3}
+    return direction_map[name]
+
+def calculate_rotation_needed(piece, target_edge_id, target_direction_name):
+    """
+    Calculate how many rotations (0-3) are needed to orient a specific edge
+    to face a target direction.
+
+    Args:
+        piece: The puzzle piece object
+        target_edge_id: Which edge should face the target direction
+        target_direction_name: Direction the edge should face ("NORTH", "EAST", "SOUTH", "WEST")
+
+    Returns:
+        Number of clockwise rotations needed (0-3)
+    """
+    target_direction_index = get_direction_index_from_name(target_direction_name)
+
+    # Get the current direction of the target edge
+    if hasattr(piece, 'edge_direction_map') and piece.edge_direction_map:
+        current_direction_index = piece.edge_direction_map[target_edge_id]
+    else:
+        print(f"Warning: Piece {piece.piece_id} has no edge_direction_map")
+        return 0
+
+    # Calculate rotations needed
+    # Each clockwise rotation adds 1 to the direction index (mod 4)
+    rotations_needed = (target_direction_index - current_direction_index) % 4
+
+    return rotations_needed
+
+
+# In[338]:
+
+
+def is_corner_position(row, col, rows, cols):
+    """Check if a position is a corner of the grid"""
+    return (row == 0 and col == 0) or \
+        (row == 0 and col == cols - 1) or \
+        (row == rows - 1 and col == 0) or \
+        (row == rows - 1 and col == cols - 1)
+
+def is_border_position(row, col, rows, cols):
+    """Check if a position is on the border of the grid (but not a corner)"""
+    if is_corner_position(row, col, rows, cols):
+        return False
+    return row == 0 or row == rows - 1 or col == 0 or col == cols - 1
+
+def get_piece_type(piece):
+    """Get piece type based on number of flat edges"""
+    if hasattr(piece, 'edges'):
+        flat_edges = [i for i, edge in enumerate(piece.edges) if edge[3] == 0]
+        num_flat_edges = len(flat_edges)
+        if num_flat_edges == 2:
+            return "CORNER"
+        elif num_flat_edges == 1:
+            return "BORDER"
+        else:
+            return "MIDDLE"
+    return "UNKNOWN"
+
+
+# In[339]:
+
+
+def reconstruct_puzzle(grid_canvas, my_puzzle):
+    available_pieces = my_puzzle.corners_pieces + my_puzzle.borders_pieces
+    placed_pieces = []
+
+    total_cells = grid_canvas.rows * grid_canvas.cols
+
+    for counter in range(total_cells):
+        row, col = get_spiral_coordinate(counter, grid_canvas.rows, grid_canvas.cols)
+        piece_id, rotation = grid_canvas.rep_array[row][col]
+
+        print(f"{counter}: ({row}, {col})")
+
+        if counter == 0:  # Special case for (0,0)
+            """_____ Place the top left corner _____"""
+            first_corner_id = 17
+            corner_piece = my_puzzle.all_pieces[first_corner_id]
+            flat_edges = [i for i, edge in enumerate(corner_piece.edges) if edge[3] == 0]
+
+            if len(flat_edges) != 2:
+                print(f"Error: Corner piece {first_corner_id} doesn't have exactly 2 flat edges!")
+                return available_pieces
+
+            correct_rotation = None
+            for rotation in range(4):
+                directions = ["EAST", "NORTH", "WEST", "SOUTH"]
+                rotated_directions = []
+                for flat_edge in flat_edges:
+                    final_direction_idx = (flat_edge - corner_piece.flat_edge_id + 2 - rotation) % 4
+                    rotated_directions.append(directions[final_direction_idx])
+
+                if set(rotated_directions) == {"NORTH", "WEST"}:
+                    correct_rotation = rotation
                     break
 
-        # Map adjacent positions to edges
-        if last_piece_position and adjacent_coords:
-            print("\n-------- adjacent position mapping --------")
+            if correct_rotation is None:
+                print(f"Warning: Could not find correct rotation for piece {first_corner_id}, using rotation=1")
+                correct_rotation = 1
 
-            # Direction to relative position mapping
-            direction_to_position = {
-                "NORTH": (-1, 0),
-                "EAST": (0, 1),
-                "SOUTH": (1, 0),
-                "WEST": (0, -1)
-            }
+            # Calculate final edge directions after grid placement rotation
+            final_edge_direction_map = {}
+            for edge_id, original_direction in corner_piece.edge_direction_map.items():
+                final_direction = (original_direction + correct_rotation) % 4
+                final_edge_direction_map[edge_id] = final_direction
 
-            # For each adjacent coordinate, determine which edge it corresponds to
-            for adj_row, adj_col in adjacent_coords:
-                # Calculate relative position from last piece
-                rel_row = adj_row - last_piece_position[0]
-                rel_col = adj_col - last_piece_position[1]
-                rel_pos = (rel_row, rel_col)
+            corner_piece.final_edge_direction_map = final_edge_direction_map
 
-                # Find which direction this adjacent position is in
-                adjacent_direction = None
-                for direction, offset in direction_to_position.items():
-                    if offset == rel_pos:
-                        adjacent_direction = direction
-                        break
+            grid_canvas.place_piece(first_corner_id, 0, 0, rotation=correct_rotation)
+            available_pieces.remove(first_corner_id)
+            placed_pieces.append(first_corner_id)
 
-                if adjacent_direction:
-                    print(f"Adjacent position ({adj_row}, {adj_col}) is to the {adjacent_direction} of piece {last_piece_id}")
+            # Update piece_id and rotation after placement
+            piece_id, rotation = grid_canvas.rep_array[row][col]
+            print(f"{counter}: ({row}, {col}) - Piece: {piece_id}, Rotation: {rotation} [PLACED CORNER]")
+            grid_canvas.print_grid()
+            grid_canvas.save(f"reconstruction_step_{counter:02d}.png")
 
-                    # Find which edge faces this direction
-                    matching_edge = None
-                    for edge_idx, edge_info in canvas_orientations.items():
-                        if edge_info['direction'] == adjacent_direction:
-                            matching_edge = edge_idx
-                            break
+        else:
+            """_____ For all other cells _____"""
+            # Only try to place if the cell is empty
+            if piece_id == -1:
+                nearby_occupied = get_nearby_occupied_cells(grid_canvas, row, col)
 
-                    if matching_edge is not None:
-                        print(f"This corresponds to edge {matching_edge} (type: {canvas_orientations[matching_edge]['type_name']})")
+                if nearby_occupied:
+                    print(f"Cell ({row}, {col}) has nearby occupied cells:")
 
-                    # Add this block of code to show top matching pieces for each edge
-                        if matching_edge is not None:
-                            print(f"Looking for matches for piece {last_piece_id}, edge {matching_edge}...")
+                    # We'll try to find a piece that can connect to ALL nearby occupied cells
+                    # For now, let's handle the case with one neighbor (which is most common in spiral)
+                    if len(nearby_occupied) == 1:
+                        neighbor_piece_id, direction, neighbor_row, neighbor_col = nearby_occupied[0]
+                        print(f"  - Piece {neighbor_piece_id} at ({neighbor_row}, {neighbor_col}) is {direction} of current cell")
 
-                            # Check if all_edge_matches exists and how it's structured
-                            if hasattr(my_puzzle, 'all_edge_matches'):
-                                print(f"Found all_edge_matches with {len(my_puzzle.all_edge_matches)} entries")
+                        # Get the piece data
+                        neighbor_piece = my_puzzle.all_pieces[neighbor_piece_id]
 
-                                # Look for matches both ways - as piece1 or piece2
-                                matching_pieces = []
+                        # Find the opposite direction (the edge that touches the current cell)
+                        direction_map = {"NORTH": "SOUTH", "SOUTH": "NORTH", "EAST": "WEST", "WEST": "EAST"}
+                        opposite_direction = direction_map[direction]
 
-                                # Try both directions since the matching might be stored either way
-                                for match in my_puzzle.all_edge_matches:
-                                    # Check if this match has our piece as piece1
-                                    if match.get('piece1_id') == last_piece_id and match.get('edge1_idx') == matching_edge:
-                                        if match.get('piece2_id') in available_pieces:
-                                            matching_pieces.append(match)
+                        # Convert direction name to index (0=NORTH, 1=EAST, 2=SOUTH, 3=WEST)
+                        direction_to_index = {"NORTH": 0, "EAST": 1, "SOUTH": 2, "WEST": 3}
+                        opposite_direction_index = direction_to_index[opposite_direction]
 
-                                    # Also check if our piece is piece2 in the match
-                                    elif match.get('piece2_id') == last_piece_id and match.get('edge2_idx') == matching_edge:
-                                        if match.get('piece1_id') in available_pieces:
-                                            # Create an equivalent match with the pieces swapped
-                                            swapped_match = {
-                                                'piece1_id': match.get('piece2_id'),
-                                                'edge1_idx': match.get('edge2_idx'),
-                                                'piece2_id': match.get('piece1_id'),
-                                                'edge2_idx': match.get('edge1_idx'),
-                                                'score': match.get('score')
-                                            }
-                                            matching_pieces.append(swapped_match)
+                        # Find the edge_id that corresponds to this direction
+                        touching_edge_id = None
+                        if hasattr(neighbor_piece, 'final_edge_direction_map') and neighbor_piece.final_edge_direction_map:
+                            # Use final_edge_direction_map if available (for placed pieces)
+                            for edge_id, edge_direction in neighbor_piece.final_edge_direction_map.items():
+                                if edge_direction == opposite_direction_index:
+                                    touching_edge_id = edge_id
+                                    break
+                        elif hasattr(neighbor_piece, 'edge_direction_map') and neighbor_piece.edge_direction_map:
+                            # Fallback to original edge_direction_map
+                            for edge_id, edge_direction in neighbor_piece.edge_direction_map.items():
+                                if edge_direction == opposite_direction_index:
+                                    touching_edge_id = edge_id
+                                    break
 
-                                # Sort by score and get top 5
-                                if matching_pieces:
-                                    matching_pieces.sort(key=lambda x: x['score'], reverse=True)
-                                    top_matches = matching_pieces[:5]  # Get top 5
+                        if touching_edge_id is not None:
+                            print(f"    -> Piece {neighbor_piece_id} has edge {touching_edge_id} facing {opposite_direction} (touching current cell)")
 
-                                    print(f"Top 5 matching pieces for this edge:")
-                                    for i, match in enumerate(top_matches):
-                                        match_piece_id = match['piece2_id']
-                                        match_edge = match['edge2_idx']
-                                        match_score = match['score']
+                            # Get sorted matches for this edge
+                            if hasattr(neighbor_piece, 'sorted_matches') and touching_edge_id in neighbor_piece.sorted_matches:
+                                matches = neighbor_piece.sorted_matches[touching_edge_id]
+                                if matches:
+                                    print(f"    -> Edge {touching_edge_id} matches:")
 
-                                        # Get edge type
-                                        match_piece = my_puzzle.all_pieces[match_piece_id]
-                                        match_edge_type = match_piece.edges[match_edge][3]
-                                        match_type_name = {0: "FLAT", 1: "IN", 2: "OUT"}.get(match_edge_type, "UNKNOWN")
+                                    # Try matches in order until we find a suitable one
+                                    placed_successfully = False
 
-                                        print(f"  {i+1}. Piece {match_piece_id}, Edge {match_edge} (type: {match_type_name}) - Score: {match_score:.3f}")
+                                    for match_idx, (match_piece_id, match_edge_id, match_score) in enumerate(matches):
+                                        # Check if the piece is still available
+                                        if match_piece_id not in available_pieces:
+                                            print(f"       - Match {match_idx + 1}: Piece {match_piece_id} is no longer available")
+                                            continue
+
+                                        candidate_piece = my_puzzle.all_pieces[match_piece_id]
+                                        candidate_piece_type = get_piece_type(candidate_piece)
+
+                                        # Check position constraints
+                                        position_valid = True
+                                        if is_corner_position(row, col, grid_canvas.rows, grid_canvas.cols):
+                                            # Corner positions must have corner pieces (exactly 2 flat edges)
+                                            if candidate_piece_type != "CORNER":
+                                                print(f"       - Match {match_idx + 1}: Piece {match_piece_id} ({candidate_piece_type}) cannot be placed at corner position (needs CORNER piece)")
+                                                position_valid = False
+                                        elif is_border_position(row, col, grid_canvas.rows, grid_canvas.cols):
+                                            # Border positions must have border pieces (exactly 1 flat edge)
+                                            if candidate_piece_type != "BORDER":
+                                                print(f"       - Match {match_idx + 1}: Piece {match_piece_id} ({candidate_piece_type}) cannot be placed at border position (needs BORDER piece)")
+                                                position_valid = False
+
+                                        if not position_valid:
+                                            continue
+
+                                        print(f"       - Match {match_idx + 1}: Piece {match_piece_id}, edge {match_edge_id}, score: {match_score:.4f} ({candidate_piece_type})")
+
+                                        # Calculate placement details
+                                        target_direction_for_candidate = direction  # The edge should face toward the neighbor
+
+                                        rotations_needed = calculate_rotation_needed(
+                                            candidate_piece,
+                                            match_edge_id,
+                                            target_direction_for_candidate
+                                        )
+
+                                        print(f"    -> PLACEMENT: Place piece {match_piece_id} at ({row}, {col})")
+                                        print(f"       - Orient edge {match_edge_id} to face {target_direction_for_candidate}")
+                                        print(f"       - Rotations needed: {rotations_needed}")
+
+                                        # Actually place the piece
+                                        success = grid_canvas.place_piece(match_piece_id, row, col, rotation=rotations_needed)
+
+                                        if success:
+                                            # Calculate final edge directions after placement
+                                            final_edge_direction_map = {}
+                                            for edge_id, original_direction in candidate_piece.edge_direction_map.items():
+                                                final_direction = (original_direction + rotations_needed) % 4
+                                                final_edge_direction_map[edge_id] = final_direction
+
+                                            candidate_piece.final_edge_direction_map = final_edge_direction_map
+
+                                            # Remove from available pieces and add to placed pieces
+                                            available_pieces.remove(match_piece_id)
+                                            placed_pieces.append(match_piece_id)
+
+                                            print(f"       - Successfully placed piece {match_piece_id}!")
+                                            print(f"       - Remaining pieces: {len(available_pieces)}")
+
+                                            # Add this code:
+                                            grid_canvas.print_grid()
+                                            grid_canvas.save(f"reconstruction_step_{counter:02d}.png")
+
+                                            placed_successfully = True
+                                            break
+                                        else:
+                                            print(f"       - Failed to place piece {match_piece_id}")
+
+                                    if not placed_successfully:
+                                        print(f"    -> No suitable piece found for position ({row}, {col})")
                                 else:
-                                    print("  No matching pieces found for this edge after checking both directions")
-
-                                    # Debug: check if we have any matches for this piece at all
-                                    piece_matches = [m for m in my_puzzle.all_edge_matches
-                                                    if m.get('piece1_id') == last_piece_id or m.get('piece2_id') == last_piece_id]
-                                    if piece_matches:
-                                        print(f"  Found {len(piece_matches)} matches for piece {last_piece_id} with other edges")
-
-                                        # Check if there are matches specifically for the edge we're looking at
-                                        edge_matches = [m for m in piece_matches if
-                                                       (m.get('piece1_id') == last_piece_id and m.get('edge1_idx') == matching_edge) or
-                                                       (m.get('piece2_id') == last_piece_id and m.get('edge2_idx') == matching_edge)]
-                                        if edge_matches:
-                                            print(f"  Found {len(edge_matches)} matches for piece {last_piece_id}, edge {matching_edge}")
-                                            for m in edge_matches[:3]:  # Show sample of up to 3 matches
-                                                print(f"    Sample match: {m}")
-                                        else:
-                                            print(f"  No matches specifically for edge {matching_edge}")
-                                    else:
-                                        print(f"  No matches at all for piece {last_piece_id}")
-
-                            # Check if edge_match_lookup exists (alternative structure)
-                            elif hasattr(my_puzzle, 'edge_match_lookup'):
-                                print("Using edge_match_lookup instead...")
-
-                                # Try to find this edge in the lookup
-                                edge_key = (last_piece_id, matching_edge)
-                                if edge_key in my_puzzle.edge_match_lookup:
-                                    matches = my_puzzle.edge_match_lookup[edge_key]
-                                    if isinstance(matches, list):
-                                        # Filter for available pieces
-                                        available_matches = [m for m in matches if m.get('piece2_id') in available_pieces]
-
-                                        if available_matches:
-                                            available_matches.sort(key=lambda x: x['score'], reverse=True)
-                                            top_matches = available_matches[:5]
-
-                                            print(f"Top 5 matching pieces for this edge (from lookup):")
-                                            for i, match in enumerate(top_matches):
-                                                match_piece_id = match['piece2_id']
-                                                match_edge = match['edge2_idx']
-                                                match_score = match['score']
-
-                                                match_piece = my_puzzle.all_pieces[match_piece_id]
-                                                match_edge_type = match_piece.edges[match_edge][3]
-                                                match_type_name = {0: "FLAT", 1: "IN", 2: "OUT"}.get(match_edge_type, "UNKNOWN")
-
-                                                print(f"  {i+1}. Piece {match_piece_id}, Edge {match_edge} (type: {match_type_name}) - Score: {match_score:.3f}")
-                                        else:
-                                            print("  No available matching pieces found in lookup")
-                                    else:
-                                        # Single match
-                                        match = matches
-                                        if match.get('piece2_id') in available_pieces:
-                                            match_piece_id = match['piece2_id']
-                                            match_edge = match['edge2_idx']
-                                            match_score = match['score']
-
-                                            match_piece = my_puzzle.all_pieces[match_piece_id]
-                                            match_edge_type = match_piece.edges[match_edge][3]
-                                            match_type_name = {0: "FLAT", 1: "IN", 2: "OUT"}.get(match_edge_type, "UNKNOWN")
-
-                                            print(f"  Match: Piece {match_piece_id}, Edge {match_edge} (type: {match_type_name}) - Score: {match_score:.3f}")
-                                        else:
-                                            print("  Match found but piece not available")
-                                else:
-                                    print(f"  No entry in edge_match_lookup for piece {last_piece_id}, edge {matching_edge}")
+                                    print(f"    -> Edge {touching_edge_id} has no matches")
                             else:
-                                print("  No matching data structures found in the puzzle object")
+                                print(f"    -> No sorted matches found for edge {touching_edge_id}")
+                        else:
+                            print(f"    -> Could not find edge facing {opposite_direction} for piece {neighbor_piece_id}")
+                    else:
+                        print(f"  - Multiple neighbors detected ({len(nearby_occupied)} neighbors)")
 
+                        # Collect all neighbor constraints
+                        neighbor_constraints = []
+                        for neighbor_piece_id, direction, neighbor_row, neighbor_col in nearby_occupied:
+                            print(f"    - Piece {neighbor_piece_id} at ({neighbor_row}, {neighbor_col}) is {direction} of current cell")
+
+                            # Get the piece data
+                            neighbor_piece = my_puzzle.all_pieces[neighbor_piece_id]
+
+                            # Find the opposite direction (the edge that touches the current cell)
+                            direction_map = {"NORTH": "SOUTH", "SOUTH": "NORTH", "EAST": "WEST", "WEST": "EAST"}
+                            opposite_direction = direction_map[direction]
+                            opposite_direction_index = get_direction_index_from_name(opposite_direction)
+
+                            # Find the edge_id that corresponds to this direction
+                            touching_edge_id = None
+                            if hasattr(neighbor_piece, 'final_edge_direction_map') and neighbor_piece.final_edge_direction_map:
+                                for edge_id, edge_direction in neighbor_piece.final_edge_direction_map.items():
+                                    if edge_direction == opposite_direction_index:
+                                        touching_edge_id = edge_id
+                                        break
+                            elif hasattr(neighbor_piece, 'edge_direction_map') and neighbor_piece.edge_direction_map:
+                                for edge_id, edge_direction in neighbor_piece.edge_direction_map.items():
+                                    if edge_direction == opposite_direction_index:
+                                        touching_edge_id = edge_id
+                                        break
+
+                            if touching_edge_id is not None:
+                                print(f"      -> Piece {neighbor_piece_id} has edge {touching_edge_id} facing {opposite_direction}")
+
+                                # Store constraint: which direction the candidate piece's edge should face
+                                target_direction_for_candidate = direction
+                                neighbor_constraints.append({
+                                    'neighbor_piece_id': neighbor_piece_id,
+                                    'neighbor_edge_id': touching_edge_id,
+                                    'target_direction': target_direction_for_candidate,
+                                    'neighbor_piece': neighbor_piece
+                                })
+
+                        # Now find candidate pieces that can satisfy ALL constraints
+                        candidate_scores = {}  # piece_id -> total_score
+                        candidate_details = {}  # piece_id -> list of (edge_id, rotation, individual_scores)
+
+                        for candidate_piece_id in available_pieces:
+                            candidate_piece = my_puzzle.all_pieces[candidate_piece_id]
+                            candidate_piece_type = get_piece_type(candidate_piece)
+
+                            # Check position constraints first
+                            position_valid = True
+                            if is_corner_position(row, col, grid_canvas.rows, grid_canvas.cols):
+                                if candidate_piece_type != "CORNER":
+                                    position_valid = False
+                            elif is_border_position(row, col, grid_canvas.rows, grid_canvas.cols):
+                                if candidate_piece_type != "BORDER":
+                                    position_valid = False
+
+                            if not position_valid:
+                                continue
+
+                            # Try all possible rotations (0-3) for this candidate piece
+                            for rotation in range(4):
+                                total_score = 0
+                                individual_scores = []
+                                valid_for_all_neighbors = True
+
+                                # Check if this rotation satisfies all neighbor constraints
+                                for constraint in neighbor_constraints:
+                                    neighbor_piece = constraint['neighbor_piece']
+                                    neighbor_edge_id = constraint['neighbor_edge_id']
+                                    target_direction = constraint['target_direction']
+                                    target_direction_index = get_direction_index_from_name(target_direction)
+
+                                    # Find which edge of the candidate would face this direction after rotation
+                                    candidate_edge_facing_neighbor = None
+                                    for edge_id, original_direction in candidate_piece.edge_direction_map.items():
+                                        final_direction = (original_direction + rotation) % 4
+                                        if final_direction == target_direction_index:
+                                            candidate_edge_facing_neighbor = edge_id
+                                            break
+
+                                    if candidate_edge_facing_neighbor is None:
+                                        valid_for_all_neighbors = False
+                                        break
+
+                                    # Get the matching score between the edges
+                                    score = 0
+                                    if hasattr(neighbor_piece, 'sorted_matches') and neighbor_edge_id in neighbor_piece.sorted_matches:
+                                        for other_piece_id, other_edge_id, match_score in neighbor_piece.sorted_matches[neighbor_edge_id]:
+                                            if other_piece_id == candidate_piece_id and other_edge_id == candidate_edge_facing_neighbor:
+                                                score = match_score
+                                                break
+
+                                    individual_scores.append(score)
+                                    total_score += score
+
+                                if valid_for_all_neighbors:
+                                    if candidate_piece_id not in candidate_scores or total_score > candidate_scores[candidate_piece_id]:
+                                        candidate_scores[candidate_piece_id] = total_score
+                                        candidate_details[candidate_piece_id] = (rotation, individual_scores, total_score)
+
+                        # Find the best candidate
+                        if candidate_scores:
+                            best_candidate_id = max(candidate_scores, key=candidate_scores.get)
+                            best_rotation, best_individual_scores, best_total_score = candidate_details[best_candidate_id]
+
+                            print(f"    -> Best candidate: Piece {best_candidate_id}")
+                            print(f"       - Total score: {best_total_score:.4f}")
+                            print(f"       - Individual scores: {best_individual_scores}")
+                            print(f"       - Rotation needed: {best_rotation}")
+
+                            # Place the piece
+                            success = grid_canvas.place_piece(best_candidate_id, row, col, rotation=best_rotation)
+
+                            if success:
+                                candidate_piece = my_puzzle.all_pieces[best_candidate_id]
+
+                                # Calculate final edge directions after placement
+                                final_edge_direction_map = {}
+                                for edge_id, original_direction in candidate_piece.edge_direction_map.items():
+                                    final_direction = (original_direction + best_rotation) % 4
+                                    final_edge_direction_map[edge_id] = final_direction
+
+                                candidate_piece.final_edge_direction_map = final_edge_direction_map
+
+                                # Remove from available pieces and add to placed pieces
+                                available_pieces.remove(best_candidate_id)
+                                placed_pieces.append(best_candidate_id)
+
+                                print(f"       - Successfully placed piece {best_candidate_id}!")
+                                print(f"       - Remaining pieces: {len(available_pieces)}")
+
+                                # Save progress
+                                grid_canvas.print_grid()
+                                grid_canvas.save(f"reconstruction_step_{counter:02d}.png")
+                            else:
+                                print(f"       - Failed to place piece {best_candidate_id}")
+                        else:
+                            print(f"    -> No suitable piece found for multiple neighbor constraints")
+                            # TODO: Could implement random selection here if needed
+
+                else:
+                    print(f"Cell ({row}, {col}) has no nearby occupied cells")
+            else:
+                print(f"Cell ({row}, {col}) already occupied by piece {piece_id}")
+
+
+
+    print(f"\nRemaining pieces to place: {available_pieces}")
+    print(f"Placed pieces: {placed_pieces}")
     return available_pieces
 
 
-# In[875]:
+# In[340]:
 
 
-border_coords = find_adjacent_border_coordinates_to_explore(reconstruction_canvas.rep_array, placed_pieces)
-print("Border adjacent coordinates:", border_coords)
+# Create a grid canvas
+reconstruction_canvas = GridCanvas(
+    width=1800,
+    height=1200,
+    rows=puzzle_r,
+    cols=puzzle_c,
+    column_spacing=250,
+    row_spacing=250,
+    margin=100
+)
+
+reconstruct_puzzle(reconstruction_canvas, my_puzzle)
+
+reconstruction_canvas.print_grid()
+reconstruction_canvas.save("new_reconstruction.png")
 
 
-# In[876]:
+# In[297]:
 
 
-suggest_next_piece_for_border(border_coords, placed_pieces, my_puzzle, reconstruction_canvas)
+# def traverse_spiral(reconstruction_canvas):
+#     """
+#     Traverse the grid in a spiral pattern starting from (0,0).
+#     Goes: right -> down -> left -> up -> right (inward spiral)
+#     """
+#     rows = reconstruction_canvas.rows
+#     cols = reconstruction_canvas.cols
+#
+#     # Boundaries for the spiral
+#     top = 0
+#     bottom = rows - 1
+#     left = 0
+#     right = cols - 1
+#
+#     counter = 0
+#
+#     while top <= bottom and left <= right:
+#         # Go right along the top row
+#         for col in range(left, right + 1):
+#             piece_id, rotation = reconstruction_canvas.rep_array[top][col]
+#             print(f"{counter}: ({top}, {col}) - Piece: {piece_id}, Rotation: {rotation}")
+#             counter += 1
+#         top += 1
+#
+#         # Go down along the right column
+#         for row in range(top, bottom + 1):
+#             piece_id, rotation = reconstruction_canvas.rep_array[row][right]
+#             print(f"{counter}: ({row}, {right}) - Piece: {piece_id}, Rotation: {rotation}")
+#             counter += 1
+#         right -= 1
+#
+#         # Go left along the bottom row (if there's still a row to traverse)
+#         if top <= bottom:
+#             for col in range(right, left - 1, -1):
+#                 piece_id, rotation = reconstruction_canvas.rep_array[bottom][col]
+#                 print(f"{counter}: ({bottom}, {col}) - Piece: {piece_id}, Rotation: {rotation}")
+#                 counter += 1
+#             bottom -= 1
+#
+#         # Go up along the left column (if there's still a column to traverse)
+#         if left <= right:
+#             for row in range(bottom, top - 1, -1):
+#                 piece_id, rotation = reconstruction_canvas.rep_array[row][left]
+#                 print(f"{counter}: ({row}, {left}) - Piece: {piece_id}, Rotation: {rotation}")
+#                 counter += 1
+#             left += 1
+
+
+# In[298]:
+
+
+# traverse_spiral(reconstruction_canvas)
+
+
+# In[ ]:
+
+
+
 
