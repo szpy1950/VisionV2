@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[828]:
+# In[1]:
 
 
 import cv2
@@ -15,13 +15,13 @@ import pandas as pd
 import math
 
 
-# In[829]:
+# In[2]:
 
 
 image_path = "images/hack2.png"
 
 
-# In[830]:
+# In[3]:
 
 
 def display_image(title, image):
@@ -35,7 +35,7 @@ def display_image(title, image):
     plt.show()
 
 
-# In[831]:
+# In[4]:
 
 
 # ## Basic reading image and display
@@ -45,7 +45,7 @@ if original_image is None:
     raise ValueError(f"Could not read image from {image_path}")
 
 
-# In[832]:
+# In[5]:
 
 
 # ## Grayscale conversion
@@ -54,7 +54,7 @@ gray_image = cv2.cvtColor(original_image, cv2.COLOR_BGR2GRAY)
 # display_image("Grayscale Image", gray_image)
 
 
-# In[833]:
+# In[6]:
 
 
 # print("Threshold to separate pieces from background")
@@ -62,7 +62,7 @@ _, binary_image = cv2.threshold(gray_image, 30, 255, cv2.THRESH_BINARY)
 # display_image("Binary Image", binary_image)
 
 
-# In[834]:
+# In[7]:
 
 
 kernel = np.ones((12, 12), np.uint8)
@@ -74,7 +74,7 @@ morph_image = cv2.morphologyEx(morph_image, cv2.MORPH_OPEN, kernel)
 # display_image("Morph Operations", morph_image)
 
 
-# In[835]:
+# In[8]:
 
 
 # print("Filling holes in puzzle pieces")
@@ -84,7 +84,7 @@ for cnt in contours_fill:
 # display_image("Filled Holes", morph_image)
 
 
-# In[836]:
+# In[9]:
 
 
 # ## Contours finding
@@ -92,7 +92,7 @@ contours, _ = cv2.findContours(morph_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_
 # print(f"Found {len(contours)} potential puzzle pieces")
 
 
-# In[837]:
+# In[10]:
 
 
 # print("Filtering contours by size")
@@ -103,7 +103,7 @@ if len(contours) > 1:
 # print(f"After filtering: {len(contours)} puzzle pieces")
 
 
-# In[838]:
+# In[11]:
 
 
 # print("Drawing contours of the original image")
@@ -111,7 +111,7 @@ contour_image = original_image.copy()
 # cv2.drawContours(contour_image, contours, -1, (0, 255, 0), 2)
 
 
-# In[839]:
+# In[12]:
 
 
 output_folder_pieces = "images/extracted_pieces"
@@ -146,7 +146,7 @@ output_tests = "images/tests"
 os.makedirs(output_tests, exist_ok=True)
 
 
-# In[840]:
+# In[13]:
 
 
 class Edge:
@@ -161,7 +161,7 @@ class Edge:
         self.color_edge_line = None
 
 
-# In[841]:
+# In[14]:
 
 
 class puzzlePiece:
@@ -217,7 +217,7 @@ class puzzlePiece:
         return ret
 
 
-# In[842]:
+# In[15]:
 
 
 class Puzzle:
@@ -231,13 +231,13 @@ class Puzzle:
         self.middle_pieces = []
 
 
-# In[843]:
+# In[16]:
 
 
 my_puzzle = Puzzle()
 
 
-# In[844]:
+# In[17]:
 
 
 for contours_indices in range(len(contours)):
@@ -571,7 +571,7 @@ for contours_indices in range(len(contours)):
     my_puzzle.all_pieces[selected_image_index] = this_piece
 
 
-# In[845]:
+# In[18]:
 
 
 print("----------- STATS ---------- ")
@@ -585,7 +585,7 @@ print("Middles: ", my_puzzle.middle_pieces)
 
 # ## Algorithm to find the puzzle size
 
-# In[846]:
+# In[19]:
 
 
 def find_puzzle_size(total, corners, borders, middles):
@@ -600,7 +600,7 @@ def find_puzzle_size(total, corners, borders, middles):
     return None
 
 
-# In[847]:
+# In[20]:
 
 
 puzzle_c, puzzle_r = find_puzzle_size(len(my_puzzle.all_pieces), len(my_puzzle.corners_pieces), len(my_puzzle.borders_pieces), len(my_puzzle.middle_pieces))
@@ -608,7 +608,7 @@ print(puzzle_r)
 print(puzzle_c)
 
 
-# In[848]:
+# In[21]:
 
 
 def display_image_cv2(title, image):
@@ -630,7 +630,7 @@ def display_image_cv2(title, image):
     cv2.destroyAllWindows()
 
 
-# In[849]:
+# In[22]:
 
 
 # target_index = 5
@@ -641,7 +641,7 @@ def display_image_cv2(title, image):
 # 
 # pieces with a straight edge -> y axis orientation
 
-# In[850]:
+# In[23]:
 
 
 # Create a new white canvas to place all oriented pieces
@@ -664,7 +664,7 @@ max_height_in_row = 0
 piece_count = 0
 
 
-# In[851]:
+# In[24]:
 
 
 class Canvas:
@@ -957,7 +957,7 @@ class Canvas:
         return None
 
 
-# In[852]:
+# In[25]:
 
 
 # First process and reorient all pieces
@@ -1186,7 +1186,7 @@ for index in (my_puzzle.borders_pieces + my_puzzle.corners_pieces + my_puzzle.mi
 print("All pieces oriented and processed!")
 
 
-# In[853]:
+# In[26]:
 
 
 # Create a canvas object with custom spacing
@@ -1207,7 +1207,7 @@ canvas_obj.save(canvas_path)
 print(f"Canvas saved to {canvas_path}")
 
 
-# In[854]:
+# In[27]:
 
 
 # Edge matching function to compute a matching score between two puzzle piece edges
@@ -1979,7 +1979,7 @@ def compute_edge_matching_score(piece1, edge1_idx, piece2, edge2_idx, debug=Fals
     return score
 
 
-# In[855]:
+# In[28]:
 
 
 all_matches = []
@@ -2053,7 +2053,7 @@ for piece in pieces_to_match:
 my_puzzle.all_edge_matches = all_matches
 
 
-# In[856]:
+# In[29]:
 
 
 # Sort all matches by score (highest first)
@@ -2091,7 +2091,7 @@ my_puzzle.edge_match_lookup = edge_match_lookup
 print("Match calculation complete and stored in my_puzzle.all_edge_matches and my_puzzle.edge_match_lookup")
 
 
-# In[857]:
+# In[30]:
 
 
 class GridCanvas:
@@ -2226,7 +2226,7 @@ class GridCanvas:
         print(f"Grid arrangement saved to {filepath}")
 
 
-# In[858]:
+# In[31]:
 
 
 # Create a grid canvas
@@ -2270,7 +2270,7 @@ grid_canvas.print_grid()
 grid_canvas.save("my_puzzle_arrangement.png")
 
 
-# In[859]:
+# In[32]:
 
 
 def find_adjacent_coordinates_to_explore(rep_array, placed_pieces):
@@ -2308,7 +2308,7 @@ def find_adjacent_coordinates_to_explore(rep_array, placed_pieces):
     return list(adjacent_coords)
 
 
-# In[860]:
+# In[33]:
 
 
 def get_adjacent_pieces_for_coordinate(adjacent_info, target_row, target_col):
@@ -2324,7 +2324,7 @@ def get_adjacent_pieces_for_coordinate(adjacent_info, target_row, target_col):
     return adjacent_pieces
 
 
-# In[861]:
+# In[34]:
 
 
 def print_adjacent_analysis(adjacent_info):
@@ -2354,7 +2354,7 @@ def print_adjacent_analysis(adjacent_info):
         print()
 
 
-# In[862]:
+# In[35]:
 
 
 # Example usage with your current setup:
@@ -2384,7 +2384,7 @@ def test_adjacent_finder(grid_canvas):
     return adjacent_info
 
 
-# In[863]:
+# In[36]:
 
 
 def display_piece_matches(piece):
@@ -2410,7 +2410,7 @@ def display_piece_matches(piece):
             print(f"  -> matching with piece {other_piece_id}, edge {other_edge_id}, score: {score:.4f}")
 
 
-# In[864]:
+# In[37]:
 
 
 def get_spiral_coordinate(counter, rows, cols):
@@ -2451,7 +2451,7 @@ def get_spiral_coordinate(counter, rows, cols):
     return coordinates[counter] if counter < len(coordinates) else None
 
 
-# In[865]:
+# In[38]:
 
 
 def get_nearby_occupied_cells(grid_canvas, target_row, target_col):
@@ -2491,7 +2491,7 @@ def get_nearby_occupied_cells(grid_canvas, target_row, target_col):
     return nearby_occupied
 
 
-# In[866]:
+# In[39]:
 
 
 def get_direction_name_from_index(index):
@@ -2533,7 +2533,7 @@ def calculate_rotation_needed(piece, target_edge_id, target_direction_name):
     return rotations_needed
 
 
-# In[867]:
+# In[40]:
 
 
 def is_corner_position(row, col, rows, cols):
@@ -2563,7 +2563,7 @@ def get_piece_type(piece):
     return "UNKNOWN"
 
 
-# In[868]:
+# In[41]:
 
 
 def get_priority_neighbor(grid_canvas, row, col):
@@ -2730,7 +2730,7 @@ def orient_middle_piece(candidate_piece, reference_piece, reference_edge_id, can
         candidate_piece.final_edge_direction_map[edge_idx] = direction_idx
 
 
-# In[869]:
+# In[42]:
 
 
 # Create a grid canvas
@@ -2745,7 +2745,7 @@ reconstruction_canvas = GridCanvas(
 )
 
 
-# In[870]:
+# In[43]:
 
 
 def generate_vertices_spiral(grid_canvas):
@@ -2883,13 +2883,13 @@ def create_vertices_lookup(grid_canvas):
 # vertices_lookup = create_vertices_lookup(grid_canvas)
 
 
-# In[871]:
+# In[44]:
 
 
 vertices_lookup = create_vertices_lookup(reconstruction_canvas)
 
 
-# In[872]:
+# In[45]:
 
 
 def get_vertex_data_by_step(vertices_lookup, step_number):
@@ -2938,7 +2938,7 @@ def print_vertex_data_for_step(vertices_lookup, step_number):
         print(f"    Cell {cell_pos} corner dirs: {dirs}")
 
 
-# In[873]:
+# In[46]:
 
 
 def get_corner_coordinate_by_direction(piece, direction_tuple):
@@ -3008,7 +3008,7 @@ def translate_piece_to_align_corners(new_piece, new_corner_dirs, prev_piece, pre
     return (dx, dy)
 
 
-# In[874]:
+# In[47]:
 
 
 def reconstruct_puzzle(grid_canvas, my_puzzle):
@@ -3393,7 +3393,7 @@ def reconstruct_puzzle(grid_canvas, my_puzzle):
     return available_pieces
 
 
-# In[875]:
+# In[48]:
 
 
 reconstruct_puzzle(reconstruction_canvas, my_puzzle)
@@ -3402,7 +3402,7 @@ reconstruction_canvas.print_grid()
 reconstruction_canvas.save("new_reconstruction.png")
 
 
-# In[876]:
+# In[49]:
 
 
 # In[ ]:
