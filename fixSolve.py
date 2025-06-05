@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
+# In[31]:
 
 
 import cv2
@@ -18,15 +18,19 @@ import bisect
 
 # ### Default image path
 
-# In[2]:
+# In[32]:
 
 
-image_path = "images/hack2.png"
+image_paths = [
+    "test_images/rgb0.png",    # Photo with red background
+    "test_images/rgb1.png",  # Photo with green background
+    "test_images/rgb2.png"    # Photo with blue background
+]
 
 
 # ### Display image help function
 
-# In[3]:
+# In[33]:
 
 
 def display_image(title, image):
@@ -42,19 +46,179 @@ def display_image(title, image):
 
 # ## Basic reading image and display
 
-# In[4]:
+# In[34]:
 
 
-print("Reading image from path:", image_path)
-original_image = cv2.imread(image_path, cv2.IMREAD_COLOR)
-if original_image is None:
-    raise ValueError(f"Could not read image from {image_path}")
+## Multi-background image loading and processing
+
+def remove_background_multi_color_notebook(image_paths, variance_threshold=40, debug=True,
+                                           skip_morphology=False, light_morphology=True):
+    """
+    Background removal function optimized for Jupyter notebook integration.
+    Returns the same format as your original code expects.
+
+    Args:
+        image_paths: List of 3 image paths
+        variance_threshold: Threshold for background detection
+        debug: Show intermediate steps
+        skip_morphology: If True, skip all morphological operations
+        light_morphology: If True, use lighter morphology operations
+    """
+
+    # Load the three images
+    images = []
+    for path in image_paths:
+        img = cv2.imread(path)
+        if img is None:
+            raise ValueError(f"Could not load image from {path}")
+        images.append(img)
+
+    print(f"Loaded {len(images)} images")
+
+    # Ensure all images have the same dimensions
+    height, width = images[0].shape[:2]
+    for i, img in enumerate(images):
+        if img.shape[:2] != (height, width):
+            print(f"Resizing image {i} to match dimensions")
+            images[i] = cv2.resize(img, (width, height))
+
+    if debug:
+        print("Showing input images:")
+        plt.figure(figsize=(15, 5))
+        for i in range(3):
+            plt.subplot(1, 3, i+1)
+            plt.imshow(cv2.cvtColor(images[i], cv2.COLOR_BGR2RGB))
+            plt.title(f'Image {i+1}')
+            plt.axis('off')
+        plt.tight_layout()
+        plt.show()
+
+    # Apply Gaussian blur to reduce noise from lighting variations
+    print("Applying noise reduction...")
+    blurred_images = []
+    for img in images:
+        blurred = cv2.GaussianBlur(img, (5, 5), 1.0)
+        blurred_images.append(blurred)
+
+    # Calculate color variance at each pixel
+    print("Calculating color variance...")
+
+    # Stack images to calculate variance efficiently
+    image_stack = np.stack(blurred_images, axis=0)  # Shape: (3, height, width, 3)
+
+    # Calculate variance across the 3 images for each color channel
+    color_variance = np.var(image_stack, axis=0)  # Shape: (height, width, 3)
+
+    # Calculate total variance (sum across color channels)
+    total_variance = np.sum(color_variance, axis=2)  # Shape: (height, width)
+
+    # Calculate adaptive threshold
+    threshold_adaptive = np.percentile(total_variance, 25)  # 25th percentile
+    final_threshold = min(variance_threshold, threshold_adaptive * 1.5)
+
+    print(f"Adaptive threshold: {threshold_adaptive:.1f}")
+    print(f"Final threshold: {final_threshold:.1f}")
+
+    if debug:
+        plt.figure(figsize=(12, 4))
+        plt.subplot(1, 2, 1)
+        plt.imshow(total_variance, cmap='hot')
+        plt.colorbar()
+        plt.title('Color Variance Across Images')
+
+        plt.subplot(1, 2, 2)
+        plt.hist(total_variance.flatten(), bins=100, alpha=0.7)
+        plt.axvline(final_threshold, color='red', linestyle='--', label=f'Threshold: {final_threshold:.1f}')
+        plt.xlabel('Variance')
+        plt.ylabel('Frequency')
+        plt.title('Variance Distribution')
+        plt.legend()
+        plt.tight_layout()
+        plt.show()
+
+    # Create foreground mask: low variance = foreground, high variance = background
+    foreground_mask = (total_variance < final_threshold).astype(np.uint8) * 255
+
+    if debug:
+        display_image("Initial Foreground Mask", foreground_mask)
+
+    # Enhanced morphological operations - much lighter and optional
+    if skip_morphology:
+        print("Skipping all morphological operations")
+        morph_image = foreground_mask.copy()
+    else:
+        print("Applying morphological operations...")
+
+        if light_morphology:
+            print("Using light morphology")
+            # Much smaller kernels for lighter processing
+            kernel_small = np.ones((3, 3), np.uint8)
+            kernel_medium = np.ones((5, 5), np.uint8)
+
+            # Light operations
+            morph_image = cv2.morphologyEx(foreground_mask, cv2.MORPH_CLOSE, kernel_small)
+            morph_image = cv2.morphologyEx(morph_image, cv2.MORPH_OPEN, kernel_small)
+        else:
+            print("Using original heavy morphology")
+            # Use similar kernel as your original code
+            kernel = np.ones((12, 12), np.uint8)
+
+            # Close = filling the holes
+            morph_image = cv2.morphologyEx(foreground_mask, cv2.MORPH_CLOSE, kernel)
+            # Open = removing the noise
+            morph_image = cv2.morphologyEx(morph_image, cv2.MORPH_OPEN, kernel)
+
+    if debug:
+        display_image("Morph Operations", morph_image)
+
+    # Fill holes (optional - can also be skipped)
+    if not skip_morphology:
+        print("Filling holes in puzzle pieces")
+        contours_fill, _ = cv2.findContours(morph_image, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
+        for cnt in contours_fill:
+            cv2.drawContours(morph_image, [cnt], 0, 255, -1)
+
+        if debug:
+            display_image("Filled Holes", morph_image)
+
+    # Find contours (same as your original)
+    contours, _ = cv2.findContours(morph_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    print(f"Found {len(contours)} potential puzzle pieces")
+
+    # Filter contours by area (same as your original)
+    print("Filtering contours by size")
+    contours = sorted(contours, key=lambda x: cv2.contourArea(x), reverse=True)
+    if len(contours) > 1:
+        reference_area = cv2.contourArea(contours[1])
+        contours = [cnt for cnt in contours if cv2.contourArea(cnt) > reference_area / 3]
+    print(f"After filtering: {len(contours)} puzzle pieces")
+
+    return contours, images[0], morph_image
+
+# Process the images with different morphology options
+print("Reading images from paths:", image_paths)
+
+# Option 1: Light morphology (recommended)
+contours, original_image, binary_image = remove_background_multi_color_notebook(
+    image_paths, variance_threshold=40, debug=True, skip_morphology=False, light_morphology=True
+)
+
+# Option 2: Skip all morphology (for testing)
+# contours, original_image, binary_image = remove_background_multi_color_notebook(
+#     image_paths, variance_threshold=40, debug=True, skip_morphology=True
+# )
+
+# Option 3: Heavy morphology (original style)
+# contours, original_image, binary_image = remove_background_multi_color_notebook(
+#     image_paths, variance_threshold=40, debug=True, skip_morphology=False, light_morphology=False
+# )
+
 display_image("Original Image", original_image)
 
 
 # ## Grayscale conversion
 
-# In[5]:
+# In[35]:
 
 
 print("Converting to grayscale")
@@ -68,14 +232,6 @@ display_image("Grayscale Image", gray_image)
 # - threshold value: `30`
 # - maxval: `255`
 
-# In[6]:
-
-
-print("Threshold to separate pieces from background")
-_, binary_image = cv2.threshold(gray_image, 30, 255, cv2.THRESH_BINARY)
-display_image("Binary Image", binary_image)
-
-
 # ## Morphing
 # 
 # Used to improve the shape and remove impurities
@@ -83,51 +239,7 @@ display_image("Binary Image", binary_image)
 # Free parameters:
 # - kernel ``(12,12)`` // like the size of the morphing
 
-# In[7]:
-
-
-kernel = np.ones((12, 12), np.uint8)
-
-
-# In[8]:
-
-
-# Close = filling the holes
-morph_image = cv2.morphologyEx(binary_image, cv2.MORPH_CLOSE, kernel)
-# Open = removing the noise
-morph_image = cv2.morphologyEx(morph_image, cv2.MORPH_OPEN, kernel)
-display_image("Morph Operations", morph_image)
-
-
-# In[9]:
-
-
-print("Filling holes in puzzle pieces")
-contours_fill, _ = cv2.findContours(morph_image, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
-for cnt in contours_fill:
-    cv2.drawContours(morph_image, [cnt], 0, 255, -1)
-display_image("Filled Holes", morph_image)
-
-
 # ## Contours finding
-
-# In[10]:
-
-
-contours, _ = cv2.findContours(morph_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-print(f"Found {len(contours)} potential puzzle pieces")
-
-
-# In[11]:
-
-
-print("Filtering contours by size")
-contours = sorted(contours, key=lambda x: cv2.contourArea(x), reverse=True)
-if len(contours) > 1:
-    reference_area = cv2.contourArea(contours[1])
-    contours = [cnt for cnt in contours if cv2.contourArea(cnt) > reference_area / 3]
-print(f"After filtering: {len(contours)} puzzle pieces")
-
 
 # ## Contours drawing
 # 
@@ -135,7 +247,7 @@ print(f"After filtering: {len(contours)} puzzle pieces")
 # - thickness: `2`
 # - rgb: `(0, 255, 0)`
 
-# In[12]:
+# In[36]:
 
 
 print("Drawing contours of the original image")
@@ -144,23 +256,23 @@ cv2.drawContours(contour_image, contours, -1, (0, 255, 0), 2)
 display_image("Detected Pieces", contour_image)
 
 
-# In[13]:
+# In[37]:
 
 
-output_folder_pieces = "images/extracted_pieces"
+output_folder_pieces = "images/fix/extracted_pieces"
 os.makedirs(output_folder_pieces, exist_ok=True)
 
-output_folder_contours = "images/extracted_contours"
+output_folder_contours = "images/fix/extracted_contours"
 os.makedirs(output_folder_contours, exist_ok=True)
 
-output_corner_folder = "images/extracted_corners"
+output_corner_folder = "images/fix/extracted_corners"
 os.makedirs(output_corner_folder, exist_ok=True)
 
-output_plots_folder = "images/corner_plots"
+output_plots_folder = "images/fix/corner_plots"
 os.makedirs(output_plots_folder, exist_ok=True)
 
 
-# In[14]:
+# In[38]:
 
 
 piece_images = []
@@ -189,13 +301,13 @@ for i, contour in enumerate(contours):
 
 # ## Corners and Edges detection on single piece
 
-# In[15]:
+# In[52]:
 
 
-selected_image_index = 17
+selected_image_index = 1
 
 
-# In[16]:
+# In[53]:
 
 
 piece_images = []
@@ -228,7 +340,7 @@ display_image(f"Cropped piece {selected_image_index+1}", contour_piece)
 # - rgb: `(0, 0, 255)`
 # - circle pos: $(cx, cy)
 
-# In[17]:
+# In[54]:
 
 
 M = cv2.moments(contour)
@@ -243,7 +355,7 @@ display_image(f"Centroid {i+1}", contour_piece)
 
 # ## Rainbow contour ( for testing )
 
-# In[18]:
+# In[55]:
 
 
 def rainbow_color(t):
@@ -258,7 +370,7 @@ def rainbow_color(t):
     else:             return (255, 0, x)
 
 
-# In[19]:
+# In[56]:
 
 
 rainbow_piece = contour_piece.copy()
@@ -280,7 +392,7 @@ display_image(f"Rainbow Contour {i+1}", rainbow_piece)
 
 # ***Note: inverted angles in the plot -> for clockwise plot***
 
-# In[20]:
+# In[57]:
 
 
 contour_points = contour - np.array([x, y])
@@ -304,7 +416,7 @@ plt.show()
 
 # # Data reduction
 
-# In[21]:
+# In[58]:
 
 
 # angles_deg = np.roll(angles_deg, -len(angles_deg) // 2)
@@ -316,7 +428,7 @@ distances = gaussian_filter1d(distances, sigma=2)
 # free parameters:
 # - marker: `.`
 
-# In[22]:
+# In[59]:
 
 
 plt.style.use('default')
@@ -326,7 +438,7 @@ plt.ylabel("Distance from centroid")
 plt.title("Radial Distance vs. Angle")
 plt.grid(True)
 
-output_test = "images/tests"
+output_test = "images/fix/tests"
 os.makedirs(output_test, exist_ok=True)
 
 plt.savefig(os.path.join(output_test, f"distance_profile_{i + 1}.png"))
@@ -340,7 +452,7 @@ plt.show()
 # - ``min_distance_between_peaks``
 # - ``prominence``
 
-# In[23]:
+# In[60]:
 
 
 delta_s = len(angles_deg) // 4
@@ -377,7 +489,7 @@ min_distances = [distances[min_idx] for min_idx in all_min_indices]
 min_distances_avg = np.mean(min_distances)
 
 
-# In[24]:
+# In[61]:
 
 
 print(all_peak_indices)
@@ -391,7 +503,7 @@ print(all_peak_indices_f)
 # note: before etra peak removal
 # 
 
-# In[25]:
+# In[62]:
 
 
 df = pd.DataFrame({
@@ -403,7 +515,7 @@ df = pd.DataFrame({
 df
 
 
-# In[26]:
+# In[63]:
 
 
 plt.style.use('default')
@@ -418,7 +530,7 @@ plt.show()
 
 # ## Minima table display
 
-# In[27]:
+# In[64]:
 
 
 df2 = pd.DataFrame({
@@ -430,7 +542,7 @@ df2 = pd.DataFrame({
 df2
 
 
-# In[28]:
+# In[65]:
 
 
 plt.style.use('default')
@@ -448,7 +560,7 @@ plt.show()
 # Free parameters:
 # - ``max_angle_diff``
 
-# In[29]:
+# In[66]:
 
 
 max_angle_diff = 25
@@ -504,7 +616,7 @@ print(f"We deleted {delCounter} extra peak angles")
 
 # ## Drawing the maxima
 
-# In[30]:
+# In[67]:
 
 
 plt.style.use('default')
@@ -519,14 +631,14 @@ plt.show()
 
 # ## Drawing the minima
 
-# In[31]:
+# In[68]:
 
 
 print(all_min_indices)
 print(min_distances_avg)
 
 
-# In[32]:
+# In[69]:
 
 
 # new_min_indice = []
@@ -541,14 +653,14 @@ print(min_distances_avg)
 new_min_indice = all_min_indices.copy()
 
 
-# In[33]:
+# In[70]:
 
 
 min_angles = [angles_deg[min_idx] for min_idx in new_min_indice]
 min_distances = [distances[min_idx] for min_idx in new_min_indice]
 
 
-# In[34]:
+# In[71]:
 
 
 plt.style.use('default')
@@ -568,7 +680,7 @@ plt.show()
 # 
 # They are defined as the top4 most pointy minima
 
-# In[35]:
+# In[72]:
 
 
 def robust_pointiness(angles_deg, distances, peak_indices, window_small=5, window_large=15):
@@ -636,7 +748,7 @@ for i, idx in enumerate(top_4_indices):
 
 # ## Draw the 4 corners
 
-# In[36]:
+# In[73]:
 
 
 contour_piece_with_peaks = contour_piece.copy()
@@ -663,7 +775,7 @@ for idx, (px, py) in enumerate(peak_coords):
     print(f"Peak {idx+1}: ({px}, {py})")
 
 
-# In[37]:
+# In[74]:
 
 
 class puzzlePiece:
@@ -699,7 +811,7 @@ print(this_piece)
 
 # ## Edge type detection
 
-# In[38]:
+# In[75]:
 
 
 def exists_peak_between(a,b,peak_indices):
@@ -719,7 +831,7 @@ def exists_peak_between(a,b,peak_indices):
         return False
 
 
-# In[39]:
+# In[76]:
 
 
 def exists_minima_between(a,b,min_indices):
@@ -746,7 +858,7 @@ def exists_minima_between(a,b,min_indices):
         return False
 
 
-# In[40]:
+# In[77]:
 
 
 edge_types = {0: "FLAT", 1: "IN", 2: "OUT"}
@@ -768,7 +880,7 @@ def get_edge_type(a, b):
             return 0
 
 
-# In[41]:
+# In[78]:
 
 
 class Edge:
@@ -778,7 +890,7 @@ class Edge:
         self.right_corner = right_corner
 
 
-# In[42]:
+# In[79]:
 
 
 edges = []
@@ -794,7 +906,7 @@ this_piece.edges = edges
 print(edges)
 
 
-# In[43]:
+# In[80]:
 
 
 for edge_id, start_idx, end_idx, edge_type in edges:
@@ -803,7 +915,7 @@ for edge_id, start_idx, end_idx, edge_type in edges:
 
 # ## Draw edges in a different color ( testing )
 
-# In[44]:
+# In[81]:
 
 
 color_edge_piece = contour_piece.copy()
@@ -834,14 +946,14 @@ display_image(f"Colored Edges", color_edge_piece)
 
 # ## Draw edges types with Corners
 
-# In[45]:
+# In[82]:
 
 
 # angles_deg = np.roll(angles_deg, +len(angles_deg) // 4)
 # distances = np.roll(distances, +len(distances) // 4)
 
 
-# In[46]:
+# In[83]:
 
 
 color_edge_corner_piece = contour_piece.copy()
@@ -874,6 +986,12 @@ for edge_id, start_idx, end_idx, edge_type in edges:
     cv2.circle(color_edge_corner_piece, (end_px, end_py), 3, corner_color, -1)    # End corner
 
 display_image(f"Edges with Corners types {selected_image_index+1}", color_edge_corner_piece)
+
+
+# In[ ]:
+
+
+
 
 
 # In[ ]:
