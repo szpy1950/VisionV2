@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
+# In[25]:
 
 
 import cv2
@@ -15,13 +15,13 @@ import pandas as pd
 import math
 
 
-# In[2]:
+# In[26]:
 
 
-image_path = "images/hack2.png"
+image_path = "images/test_images/image.jpeg"
 
 
-# In[3]:
+# In[27]:
 
 
 def display_image(title, image):
@@ -35,7 +35,7 @@ def display_image(title, image):
     plt.show()
 
 
-# In[4]:
+# In[28]:
 
 
 # ## Basic reading image and display
@@ -45,24 +45,24 @@ if original_image is None:
     raise ValueError(f"Could not read image from {image_path}")
 
 
-# In[5]:
+# In[29]:
 
 
 # ## Grayscale conversion
 
 gray_image = cv2.cvtColor(original_image, cv2.COLOR_BGR2GRAY)
-# display_image("Grayscale Image", gray_image)
+display_image("Grayscale Image", gray_image)
 
 
-# In[6]:
+# In[30]:
 
 
 # print("Threshold to separate pieces from background")
 _, binary_image = cv2.threshold(gray_image, 30, 255, cv2.THRESH_BINARY)
-# display_image("Binary Image", binary_image)
+display_image("Binary Image", binary_image)
 
 
-# In[7]:
+# In[31]:
 
 
 kernel = np.ones((12, 12), np.uint8)
@@ -71,28 +71,28 @@ kernel = np.ones((12, 12), np.uint8)
 morph_image = cv2.morphologyEx(binary_image, cv2.MORPH_CLOSE, kernel)
 # Open = removing the noise
 morph_image = cv2.morphologyEx(morph_image, cv2.MORPH_OPEN, kernel)
-# display_image("Morph Operations", morph_image)
+display_image("Morph Operations", morph_image)
 
 
-# In[8]:
+# In[32]:
 
 
 # print("Filling holes in puzzle pieces")
 contours_fill, _ = cv2.findContours(morph_image, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
 for cnt in contours_fill:
     cv2.drawContours(morph_image, [cnt], 0, 255, -1)
-# display_image("Filled Holes", morph_image)
+display_image("Filled Holes", morph_image)
 
 
-# In[9]:
+# In[33]:
 
 
 # ## Contours finding
 contours, _ = cv2.findContours(morph_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-# print(f"Found {len(contours)} potential puzzle pieces")
+print(f"Found {len(contours)} potential puzzle pieces")
 
 
-# In[10]:
+# In[34]:
 
 
 # print("Filtering contours by size")
@@ -100,18 +100,18 @@ contours = sorted(contours, key=lambda x: cv2.contourArea(x), reverse=True)
 if len(contours) > 1:
     reference_area = cv2.contourArea(contours[1])
     contours = [cnt for cnt in contours if cv2.contourArea(cnt) > reference_area / 3]
-# print(f"After filtering: {len(contours)} puzzle pieces")
+print(f"After filtering: {len(contours)} puzzle pieces")
 
 
-# In[11]:
+# In[35]:
 
 
 # print("Drawing contours of the original image")
 contour_image = original_image.copy()
-# cv2.drawContours(contour_image, contours, -1, (0, 255, 0), 2)
+cv2.drawContours(contour_image, contours, -1, (0, 255, 0), 2)
 
 
-# In[12]:
+# In[36]:
 
 
 output_folder_pieces = "images/extracted_pieces"
@@ -146,7 +146,7 @@ output_tests = "images/tests"
 os.makedirs(output_tests, exist_ok=True)
 
 
-# In[13]:
+# In[37]:
 
 
 class Edge:
@@ -161,7 +161,7 @@ class Edge:
         self.color_edge_line = None
 
 
-# In[14]:
+# In[38]:
 
 
 class puzzlePiece:
@@ -217,7 +217,7 @@ class puzzlePiece:
         return ret
 
 
-# In[15]:
+# In[39]:
 
 
 class Puzzle:
@@ -231,13 +231,13 @@ class Puzzle:
         self.middle_pieces = []
 
 
-# In[16]:
+# In[40]:
 
 
 my_puzzle = Puzzle()
 
 
-# In[17]:
+# In[41]:
 
 
 for contours_indices in range(len(contours)):
@@ -571,7 +571,7 @@ for contours_indices in range(len(contours)):
     my_puzzle.all_pieces[selected_image_index] = this_piece
 
 
-# In[18]:
+# In[42]:
 
 
 print("----------- STATS ---------- ")
@@ -585,7 +585,7 @@ print("Middles: ", my_puzzle.middle_pieces)
 
 # ## Algorithm to find the puzzle size
 
-# In[19]:
+# In[43]:
 
 
 def find_puzzle_size(total, corners, borders, middles):
@@ -600,7 +600,7 @@ def find_puzzle_size(total, corners, borders, middles):
     return None
 
 
-# In[20]:
+# In[44]:
 
 
 puzzle_c, puzzle_r = find_puzzle_size(len(my_puzzle.all_pieces), len(my_puzzle.corners_pieces), len(my_puzzle.borders_pieces), len(my_puzzle.middle_pieces))
@@ -608,7 +608,7 @@ print(puzzle_r)
 print(puzzle_c)
 
 
-# In[21]:
+# In[165]:
 
 
 def display_image_cv2(title, image):
@@ -630,7 +630,7 @@ def display_image_cv2(title, image):
     cv2.destroyAllWindows()
 
 
-# In[22]:
+# In[166]:
 
 
 # target_index = 5
@@ -641,7 +641,7 @@ def display_image_cv2(title, image):
 # 
 # pieces with a straight edge -> y axis orientation
 
-# In[23]:
+# In[167]:
 
 
 # Create a new white canvas to place all oriented pieces
@@ -664,7 +664,7 @@ max_height_in_row = 0
 piece_count = 0
 
 
-# In[24]:
+# In[168]:
 
 
 class Canvas:
@@ -797,7 +797,7 @@ class Canvas:
         plt.tight_layout()
         plt.show()
 
-    def place_piece(self, piece, grid_x=None, grid_y=None, rotations=0):
+    def place_piece(self, piece, grid_x=None, grid_y=None, rotations=0, translation=None):
         # Apply any requested rotation
         if rotations > 0:
             self.rotate_piece(piece, rotations)
@@ -805,9 +805,15 @@ class Canvas:
         # If grid positions are specified, use them for placement
         if grid_x is not None and grid_y is not None:
             # Calculate position based on grid coordinates
-            x = self.margin + grid_x * self.column_spacing
-            y = self.margin + grid_y * self.row_spacing
-            self.grid[(grid_x, grid_y)] = piece.piece_id
+            if translation:
+                dx, dy = translation
+                # Get the base position of the reference piece or use default grid position
+                x = self.margin + col * self.column_spacing + dx
+                y = self.margin + row * self.row_spacing + dy
+            else:
+                # Default grid positioning
+                x = self.margin + col * self.column_spacing
+                y = self.margin + row * self.row_spacing
 
             # For reconstruction, we need to adjust according to piece features
             # This depends on your specific needs for how pieces should align
@@ -957,7 +963,7 @@ class Canvas:
         return None
 
 
-# In[25]:
+# In[169]:
 
 
 # First process and reorient all pieces
@@ -1186,7 +1192,7 @@ for index in (my_puzzle.borders_pieces + my_puzzle.corners_pieces + my_puzzle.mi
 print("All pieces oriented and processed!")
 
 
-# In[26]:
+# In[170]:
 
 
 # Create a canvas object with custom spacing
@@ -1207,7 +1213,7 @@ canvas_obj.save(canvas_path)
 print(f"Canvas saved to {canvas_path}")
 
 
-# In[27]:
+# In[171]:
 
 
 # Edge matching function to compute a matching score between two puzzle piece edges
@@ -1644,7 +1650,7 @@ def compute_edge_matching_score(piece1, edge1_idx, piece2, edge2_idx, debug=Fals
         length_score = 1.0 - ((length_diff_percent - 0.05) / (0.30 - 0.05))
 
     # Combine with color score (you can adjust the weighting)
-    final_score = (score * 0.5) + (length_score * 0.5)  # 70% color, 30% length
+    final_score = (score * 0.7) + (length_score * 0.3)  # 70% color, 30% length
     score = max(0, min(1, final_score))
 
     # Also keep avg_diff and max_possible_diff
@@ -1979,7 +1985,7 @@ def compute_edge_matching_score(piece1, edge1_idx, piece2, edge2_idx, debug=Fals
     return score
 
 
-# In[28]:
+# In[172]:
 
 
 all_matches = []
@@ -2053,7 +2059,7 @@ for piece in pieces_to_match:
 my_puzzle.all_edge_matches = all_matches
 
 
-# In[29]:
+# In[173]:
 
 
 # Sort all matches by score (highest first)
@@ -2091,7 +2097,7 @@ my_puzzle.edge_match_lookup = edge_match_lookup
 print("Match calculation complete and stored in my_puzzle.all_edge_matches and my_puzzle.edge_match_lookup")
 
 
-# In[30]:
+# In[174]:
 
 
 class GridCanvas:
@@ -2112,7 +2118,7 @@ class GridCanvas:
         self.canvas = np.ones((height, width, 4), dtype=np.uint8) * 255
         self.canvas[:,:,3] = 255  # Full alpha
 
-    def place_piece(self, piece_id, row, col, rotation=0):
+    def place_piece(self, piece_id, row, col, rotation=0, translation=None):
         # Validate position
         if not (0 <= row < self.rows and 0 <= col < self.cols):
             print(f"Position ({row},{col}) is outside the grid bounds.")
@@ -2146,8 +2152,16 @@ class GridCanvas:
                 piece_id, rotation = self.rep_array[row][col]
 
                 # Calculate position - this is where the top-left of the image should go
-                x = self.margin + col * self.column_spacing
-                y = self.margin + row * self.row_spacing
+                base_x = self.margin + col * self.column_spacing
+                base_y = self.margin + row * self.row_spacing
+
+                if hasattr(self, 'piece_translations') and (row, col) in self.piece_translations:
+                    dx, dy = self.piece_translations[(row, col)]
+                    x = base_x + dx
+                    y = base_y + dy
+                else:
+                    x = base_x
+                    y = base_y
 
                 # Skip empty cells
                 if piece_id == -1:
@@ -2200,15 +2214,15 @@ class GridCanvas:
                                     )
 
                             # Draw orange rectangle around the piece's bounding box
-                            cv2.rectangle(self.canvas,
-                                         (x_start, y_start),
-                                         (canvas_x_end, canvas_y_end),
-                                         (0, 165, 255, 255), 2)  # BGR format: Orange
+                            # cv2.rectangle(self.canvas,
+                            #              (x_start, y_start),
+                            #              (canvas_x_end, canvas_y_end),
+                            #              (0, 165, 255, 255), 2)  # BGR format: Orange
                     else:
                         print(f"Warning: Piece {piece_id} does not have a rotated_image")
 
                 # Draw a purple dot at the exact grid coordinate to verify placement
-                cv2.circle(self.canvas, (x, y), 5, (255, 0, 255, 255), -1)  # BGR format: Purple, -1 means filled circle
+                # cv2.circle(self.canvas, (x, y), 5, (255, 0, 255, 255), -1)  # BGR format: Purple, -1 means filled circle
 
     def save(self, filename="grid_arrangement.png"):
         # Render the grid before saving
@@ -2226,7 +2240,7 @@ class GridCanvas:
         print(f"Grid arrangement saved to {filepath}")
 
 
-# In[31]:
+# In[175]:
 
 
 # Create a grid canvas
@@ -2270,7 +2284,7 @@ grid_canvas.print_grid()
 grid_canvas.save("my_puzzle_arrangement.png")
 
 
-# In[32]:
+# In[176]:
 
 
 def find_adjacent_coordinates_to_explore(rep_array, placed_pieces):
@@ -2308,7 +2322,7 @@ def find_adjacent_coordinates_to_explore(rep_array, placed_pieces):
     return list(adjacent_coords)
 
 
-# In[33]:
+# In[177]:
 
 
 def get_adjacent_pieces_for_coordinate(adjacent_info, target_row, target_col):
@@ -2324,7 +2338,7 @@ def get_adjacent_pieces_for_coordinate(adjacent_info, target_row, target_col):
     return adjacent_pieces
 
 
-# In[34]:
+# In[178]:
 
 
 def print_adjacent_analysis(adjacent_info):
@@ -2354,7 +2368,7 @@ def print_adjacent_analysis(adjacent_info):
         print()
 
 
-# In[35]:
+# In[179]:
 
 
 # Example usage with your current setup:
@@ -2384,7 +2398,7 @@ def test_adjacent_finder(grid_canvas):
     return adjacent_info
 
 
-# In[36]:
+# In[180]:
 
 
 def display_piece_matches(piece):
@@ -2410,7 +2424,7 @@ def display_piece_matches(piece):
             print(f"  -> matching with piece {other_piece_id}, edge {other_edge_id}, score: {score:.4f}")
 
 
-# In[37]:
+# In[181]:
 
 
 def get_spiral_coordinate(counter, rows, cols):
@@ -2451,7 +2465,7 @@ def get_spiral_coordinate(counter, rows, cols):
     return coordinates[counter] if counter < len(coordinates) else None
 
 
-# In[38]:
+# In[182]:
 
 
 def get_nearby_occupied_cells(grid_canvas, target_row, target_col):
@@ -2491,7 +2505,7 @@ def get_nearby_occupied_cells(grid_canvas, target_row, target_col):
     return nearby_occupied
 
 
-# In[39]:
+# In[183]:
 
 
 def get_direction_name_from_index(index):
@@ -2533,7 +2547,7 @@ def calculate_rotation_needed(piece, target_edge_id, target_direction_name):
     return rotations_needed
 
 
-# In[40]:
+# In[184]:
 
 
 def is_corner_position(row, col, rows, cols):
@@ -2563,7 +2577,7 @@ def get_piece_type(piece):
     return "UNKNOWN"
 
 
-# In[41]:
+# In[185]:
 
 
 def get_priority_neighbor(grid_canvas, row, col):
@@ -2730,13 +2744,13 @@ def orient_middle_piece(candidate_piece, reference_piece, reference_edge_id, can
         candidate_piece.final_edge_direction_map[edge_idx] = direction_idx
 
 
-# In[42]:
+# In[186]:
 
 
 # Create a grid canvas
 reconstruction_canvas = GridCanvas(
-    width=1800,
-    height=1200,
+    width=max(puzzle_r, puzzle_c)*300,
+    height=max(puzzle_r, puzzle_c)*300,
     rows=puzzle_r,
     cols=puzzle_c,
     column_spacing=250,
@@ -2745,7 +2759,21 @@ reconstruction_canvas = GridCanvas(
 )
 
 
-# In[43]:
+# In[187]:
+
+
+reconstruction_canvas2 = GridCanvas(
+    width=max(puzzle_r, puzzle_c)*300,
+    height=max(puzzle_r, puzzle_c)*300,
+    rows=puzzle_c,
+    cols=puzzle_r,
+    column_spacing=250,
+    row_spacing=250,
+    margin=100
+)
+
+
+# In[188]:
 
 
 def generate_vertices_spiral(grid_canvas):
@@ -2883,13 +2911,14 @@ def create_vertices_lookup(grid_canvas):
 # vertices_lookup = create_vertices_lookup(grid_canvas)
 
 
-# In[44]:
+# In[189]:
 
 
 vertices_lookup = create_vertices_lookup(reconstruction_canvas)
+vertices_lookup2 = create_vertices_lookup(reconstruction_canvas)
 
 
-# In[45]:
+# In[190]:
 
 
 def get_vertex_data_by_step(vertices_lookup, step_number):
@@ -2938,7 +2967,7 @@ def print_vertex_data_for_step(vertices_lookup, step_number):
         print(f"    Cell {cell_pos} corner dirs: {dirs}")
 
 
-# In[46]:
+# In[191]:
 
 
 def get_corner_coordinate_by_direction(piece, direction_tuple):
@@ -3008,10 +3037,11 @@ def translate_piece_to_align_corners(new_piece, new_corner_dirs, prev_piece, pre
     return (dx, dy)
 
 
-# In[47]:
+# In[192]:
 
 
-def reconstruct_puzzle(grid_canvas, my_puzzle):
+import random
+def reconstruct_puzzle(grid_canvas, my_puzzle, id):
     available_pieces = my_puzzle.corners_pieces + my_puzzle.borders_pieces
     placed_pieces = []
     isMiddleCell = False
@@ -3032,7 +3062,7 @@ def reconstruct_puzzle(grid_canvas, my_puzzle):
 
         if counter == 0:  # Special case for (0,0)
             """_____ Place the top left corner _____"""
-            first_corner_id = 17
+            first_corner_id = random.choice(my_puzzle.corners_pieces)
             corner_piece = my_puzzle.all_pieces[first_corner_id]
             flat_edges = [i for i, edge in enumerate(corner_piece.edges) if edge[3] == 0]
 
@@ -3073,7 +3103,7 @@ def reconstruct_puzzle(grid_canvas, my_puzzle):
             print(f"{counter}: ({row}, {col}) - Piece: {piece_id}, Rotation: {rotation} [PLACED CORNER]")
             grid_canvas.print_grid()
             print_vertex_data_for_step(vertices_lookup, counter)
-            grid_canvas.save(f"reconstruction_step_{counter:02d}.png")
+            grid_canvas.save(f"reconstruction_step_{counter:02d}_{id}.png")
 
         else:
             """_____ For all other cells _____"""
@@ -3217,6 +3247,12 @@ def reconstruct_puzzle(grid_canvas, my_puzzle):
                                                         candidate_piece, new_corner_dirs,
                                                         prev_piece, prev_corner_dirs
                                                     )
+
+                                                    print(f" the translation data {dx, dy}")
+
+                                                    candidate_piece.canvas_translation = (dx, dy)
+
+                                                    success = grid_canvas.place_piece(match_piece_id, row, col, rotation=rotations_needed)
 
                                                     # Apply translation to the new piece (you'll need to implement this)
                                                     # apply_translation_to_piece(candidate_piece, dx, dy)
@@ -3393,16 +3429,42 @@ def reconstruct_puzzle(grid_canvas, my_puzzle):
     return available_pieces
 
 
-# In[48]:
+# In[193]:
 
 
-reconstruct_puzzle(reconstruction_canvas, my_puzzle)
+is_first = False
+try:
+    reconstruct_puzzle(reconstruction_canvas, my_puzzle, 1)
 
-reconstruction_canvas.print_grid()
-reconstruction_canvas.save("new_reconstruction.png")
+    reconstruction_canvas.print_grid()
+    reconstruction_canvas.save("new_reconstruction.png")
+    is_first = True
+except:
+    pass
 
 
-# In[49]:
+# In[194]:
+
+
+is_second = False
+
+try:
+    reconstruct_puzzle(reconstruction_canvas2, my_puzzle, 2)
+    reconstruction_canvas2.print_grid()
+    reconstruction_canvas2.save("new_reconstruction2.png")
+    is_second = True
+except:
+    pass
+
+
+# In[195]:
+
+
+print(is_first)
+print(is_second)
+
+
+# In[196]:
 
 
 # In[ ]:

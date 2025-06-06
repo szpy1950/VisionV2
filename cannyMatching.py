@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
+# In[1097]:
 
 
 import cv2
@@ -15,13 +15,14 @@ import pandas as pd
 import math
 
 
-# In[2]:
+# In[1098]:
 
 
-image_path = "images/test_images/image3.png"
+base_path = "images/exam"
+image_path = "images/test_images/image.jpeg"
 
 
-# In[3]:
+# In[1099]:
 
 
 def display_image(title, image):
@@ -35,23 +36,10 @@ def display_image(title, image):
     plt.show()
 
 
-# In[4]:
+# In[1100]:
 
 
 def remove_background_canny_edge_detection(image_path, debug=True):
-    """
-    Background removal function using Canny edge detection.
-    Returns contours, original image, and binary mask in the same format as the original code.
-
-    Args:
-        image_path: Single image path (string)
-        debug: Show intermediate steps
-
-    Returns:
-        contours: List of contours for puzzle pieces
-        original_image: Original loaded image
-        binary_mask: Final binary mask
-    """
 
     # Load single image instead of multiple images
     original_image = cv2.imread(image_path, cv2.IMREAD_COLOR)
@@ -85,7 +73,7 @@ def remove_background_canny_edge_detection(image_path, debug=True):
     high_threshold = 150  # Upper threshold for strong edges
 
     canny_edges = cv2.Canny(blurred, low_threshold, high_threshold)
-
+    #
     if debug:
         display_image("Canny Edges", canny_edges)
         edge_pixels = np.count_nonzero(canny_edges)
@@ -192,8 +180,8 @@ def remove_background_canny_edge_detection(image_path, debug=True):
         display_image("After Final Shrinking", final_mask)
 
     # STEP 9: Final contour extraction
-    if debug:
-        print("🎯 STEP 9: Final results and analysis")
+    # if debug:
+    #     print("🎯 STEP 9: Final results and analysis")
 
     final_contours, _ = cv2.findContours(final_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
 
@@ -217,7 +205,7 @@ def remove_background_canny_edge_detection(image_path, debug=True):
     return final_contours, original_image, final_mask
 
 
-# In[5]:
+# In[1101]:
 
 
 print("Reading image from path:", image_path)
@@ -232,7 +220,7 @@ gray_image = cv2.cvtColor(original_image, cv2.COLOR_BGR2GRAY)
 display_image("Grayscale Image", gray_image)
 
 
-# In[6]:
+# In[1102]:
 
 
 print("Drawing contours of the original image")
@@ -241,42 +229,41 @@ cv2.drawContours(contour_image, contours, -1, (0, 255, 0), 2)
 display_image("Detected Pieces", contour_image)
 
 
-# In[64]:
+# In[1103]:
 
 
-output_folder_pieces = "images/extracted_pieces"
+output_folder_pieces = f"{base_path}/extracted_pieces"
 os.makedirs(output_folder_pieces, exist_ok=True)
 
-output_folder_contours = "images/extracted_contours"
+output_folder_contours = f"{base_path}/extracted_contours"
 os.makedirs(output_folder_contours, exist_ok=True)
 
-output_corner_folder = "images/extracted_corners"
+output_corner_folder = f"{base_path}/extracted_corners"
 os.makedirs(output_corner_folder, exist_ok=True)
 
-output_transparent_folder = "images/transparent_pieces"
+output_transparent_folder = f"{base_path}/transparent_pieces"
 os.makedirs(output_transparent_folder, exist_ok=True)
 
-output_plots_folder = "images/corner_plots"
+output_plots_folder = f"{base_path}/corner_plots"
 os.makedirs(output_plots_folder, exist_ok=True)
 
-output_canvas = "images/canvas"
+output_canvas = f"{base_path}/canvas"
 os.makedirs(output_canvas, exist_ok=True)
 
-output_oriented_folder = "images/oriented_pieces"
+output_oriented_folder = f"{base_path}/oriented_pieces"
 os.makedirs(output_oriented_folder, exist_ok=True)
 
-output_edges_and_corner_folder = "images/edges_and_corners"
+output_edges_and_corner_folder = f"{base_path}/edges_and_corners"
 os.makedirs(output_edges_and_corner_folder, exist_ok=True)
 
-
-output_matching = "images/matching"
+output_matching = f"{base_path}/matching"
 os.makedirs(output_matching, exist_ok=True)
 
-output_tests = "images/tests"
+output_tests = f"{base_path}/tests"
 os.makedirs(output_tests, exist_ok=True)
 
 
-# In[65]:
+# In[1104]:
 
 
 class Edge:
@@ -291,7 +278,7 @@ class Edge:
         self.color_edge_line = None
 
 
-# In[74]:
+# In[1105]:
 
 
 class puzzlePiece:
@@ -347,7 +334,7 @@ class puzzlePiece:
         return ret
 
 
-# In[75]:
+# In[1106]:
 
 
 class Puzzle:
@@ -361,19 +348,19 @@ class Puzzle:
         self.middle_pieces = []
 
 
-# In[76]:
+# In[1107]:
 
 
 my_puzzle = Puzzle()
 
 
-# In[77]:
+# In[1108]:
 
 
 print(len(contours))
 
 
-# In[78]:
+# In[1109]:
 
 
 for contours_indices in range(len(contours)):
@@ -415,15 +402,15 @@ for contours_indices in range(len(contours)):
     transparent_piece[:, :, 3] = relative_mask
     this_piece.transparent_image = transparent_piece
 
-    # transparent_path = os.path.join(output_transparent_folder, f"piece_{selected_image_index}_transparent.png")
-    # cv2.imwrite(transparent_path, transparent_piece)
+    transparent_path = os.path.join(output_transparent_folder, f"piece_{selected_image_index}_transparent.png")
+    cv2.imwrite(transparent_path, transparent_piece)
 
 
-    # piece_path = os.path.join(output_folder_pieces, f"piece_{selected_image_index + 1}.png")
-    # cv2.imwrite(piece_path, cropped_piece)
+    piece_path = os.path.join(output_folder_pieces, f"piece_{selected_image_index + 1}.png")
+    cv2.imwrite(piece_path, cropped_piece)
     contour_piece = cropped_piece.copy()
 
-    # display_image(f"Cropped piece {selected_image_index+1}", contour_piece)
+    display_image(f"Cropped piece {selected_image_index+1}", contour_piece)
 
 
     # In[110]:
@@ -567,16 +554,19 @@ for contours_indices in range(len(contours)):
     top_4_distances = [distances[i] for i in top_4_peak_indices]
 
     # #### JUST ADDED DEBUG
-    # plt.figure(figsize=(10, 6))
-    # plt.scatter(angles_deg, distances, marker='.', alpha=0.5, label='All Points')
-    # # plt.scatter(peak_angles, peak_distances, color='red', marker='o', label='All Peaks')
-    # plt.scatter(top_4_angles, top_4_distances, color='greene', marker='*', s=200, label='Top 4 Pointy Peaks')
-    # plt.xlabel("Angle (degrees)")
-    # plt.ylabel("Distance from centroid")
-    # plt.title("Radial Distance vs. Angle with Top 4 Pointiest Peaks")
-    # plt.legend()
-    # plt.grid(True)
+    plt.figure(figsize=(10, 6))
+    plt.scatter(angles_deg, distances, marker='.', alpha=0.5, label='All Points')
+    plt.scatter(peak_angles, peak_distances, color='red', marker='o', label='All Peaks')
+    plt.scatter(top_4_angles, top_4_distances, color='green', marker='*', s=200, label='Top 4 Pointy Peaks')
+    plt.scatter(min_angles, min_distances, color='orange', marker='o', label='Minima')
+    plt.xlabel("Angle (degrees)")
+    plt.ylabel("Distance from centroid")
+    plt.title("Radial Distance vs. Angle with Top 4 Pointiest Peaks")
+    plt.legend()
+    plt.grid(True)
     # plt.show()
+
+    plt.savefig(f"{output_plots_folder}/plot{selected_image_index}.png")
 
     peak_angles = angles_deg[all_peak_indices]
     peak_distances = distances[all_peak_indices]
@@ -727,7 +717,7 @@ for contours_indices in range(len(contours)):
     my_puzzle.all_pieces[selected_image_index] = this_piece
 
 
-# In[79]:
+# In[1110]:
 
 
 print("----------- STATS ---------- ")
@@ -741,7 +731,7 @@ print("Middles: ", my_puzzle.middle_pieces)
 
 # ## Algorithm to find the puzzle size
 
-# In[80]:
+# In[1111]:
 
 
 def find_puzzle_size(total, corners, borders, middles):
@@ -756,7 +746,7 @@ def find_puzzle_size(total, corners, borders, middles):
     return None
 
 
-# In[81]:
+# In[1112]:
 
 
 print(len(my_puzzle.all_pieces))      # should be 49
@@ -765,14 +755,14 @@ print(len(my_puzzle.borders_pieces))  # should be 20
 print(len(my_puzzle.middle_pieces))   # should be 25
 
 
-# In[82]:
+# In[1113]:
 
 
 print(my_puzzle.corners_pieces)
 print(my_puzzle.borders_pieces)
 
 
-# In[83]:
+# In[1114]:
 
 
 puzzle_c, puzzle_r = find_puzzle_size(len(my_puzzle.all_pieces), len(my_puzzle.corners_pieces), len(my_puzzle.borders_pieces), len(my_puzzle.middle_pieces))
@@ -780,7 +770,7 @@ print(puzzle_r)
 print(puzzle_c)
 
 
-# In[84]:
+# In[1115]:
 
 
 def display_image_cv2(title, image):
@@ -802,7 +792,7 @@ def display_image_cv2(title, image):
     cv2.destroyAllWindows()
 
 
-# In[85]:
+# In[1116]:
 
 
 # target_index = 5
@@ -813,14 +803,14 @@ def display_image_cv2(title, image):
 # 
 # pieces with a straight edge -> y axis orientation
 
-# In[86]:
+# In[1117]:
 
 
 # Create a new white canvas to place all oriented pieces
 # Define this before the loop
-canvas_width = 1500
-canvas_height = 1200
-piece_spacing = 50
+canvas_width = 1800
+canvas_height = 1800
+piece_spacing = 250
 margin = 100
 
 max_pieces_per_row = puzzle_r
@@ -836,7 +826,7 @@ max_height_in_row = 0
 piece_count = 0
 
 
-# In[87]:
+# In[1118]:
 
 
 class Canvas:
@@ -1129,7 +1119,7 @@ class Canvas:
         return None
 
 
-# In[88]:
+# In[1119]:
 
 
 # First process and reorient all pieces
@@ -1358,11 +1348,11 @@ for index in (my_puzzle.borders_pieces + my_puzzle.corners_pieces + my_puzzle.mi
 print("All pieces oriented and processed!")
 
 
-# In[89]:
+# In[1120]:
 
 
 # Create a canvas object with custom spacing
-canvas_obj = Canvas(1500, 1200, column_spacing=100, row_spacing=-150, margin=100)
+canvas_obj = Canvas(1800, 1800, column_spacing=100, row_spacing=-150, margin=100)
 
 # Now place all the pieces on the canvas
 piece_indices = my_puzzle.borders_pieces + my_puzzle.corners_pieces + my_puzzle.middle_pieces
@@ -1379,7 +1369,7 @@ canvas_obj.save(canvas_path)
 print(f"Canvas saved to {canvas_path}")
 
 
-# In[90]:
+# In[1121]:
 
 
 # Edge matching function to compute a matching score between two puzzle piece edges
@@ -1443,7 +1433,7 @@ def compute_edge_matching_score(piece1, edge1_idx, piece2, edge2_idx, debug=Fals
 
         # Check if current edge is opposite to a flat edge (2 positions away in clockwise order)
         if (flat_edge1_idx is not None and (edge1_idx == (flat_edge1_idx + 2) % 4)) or \
-           (flat_edge2_idx is not None and (edge2_idx == (flat_edge2_idx + 2) % 4)):
+                (flat_edge2_idx is not None and (edge2_idx == (flat_edge2_idx + 2) % 4)):
             if debug:
                 print(f"Edge {edge1_idx} of piece {piece1.piece_id} or edge {edge2_idx} of piece {piece2.piece_id} is opposite to a flat edge on a border piece. Score = 0")
             return 0
@@ -1558,8 +1548,22 @@ def compute_edge_matching_score(piece1, edge1_idx, piece2, edge2_idx, debug=Fals
         end_rot2 = piece2.relative_contour[piece2.edges[edge2_idx][2]][0]
 
     # Get rotated contour points between the corners for each edge
+    # def get_contour_between_corners(piece, start_idx, end_idx):
+    #     contour = piece.absolute_contour  # Use the full contour
+    #     if start_idx < end_idx:
+    #         return contour[start_idx:end_idx+1]
+    #     else:
+    #         # Wrap around the contour
+    #         return np.vstack([contour[start_idx:], contour[:end_idx+1]])
+
     def get_contour_between_corners(piece, start_idx, end_idx):
-        contour = piece.absolute_contour  # Use the full contour
+        # Check if piece has rotated contour - if not, throw error
+        if not hasattr(piece, 'rotated_contour') or piece.rotated_contour is None:
+            raise ValueError(f"ERROR: Piece {piece.piece_id} does not have a rotated_contour!")
+
+        contour = piece.rotated_contour
+
+        # ADD THESE MISSING LINES:
         if start_idx < end_idx:
             return contour[start_idx:end_idx+1]
         else:
@@ -1571,100 +1575,151 @@ def compute_edge_matching_score(piece1, edge1_idx, piece2, edge2_idx, debug=Fals
     contour2 = get_contour_between_corners(piece2, start_corner2, end_corner2)
 
     # Sample N points along each edge for comparison
-    N = 20  # Number of sampling points
+    N = 15  # Number of sampling points
 
     # Function to sample points along an edge
     def sample_points_along_edge(contour, N):
         total_points = len(contour)
-        indices = np.linspace(0, total_points-1, N, dtype=int)
-        return contour[indices]
+        # Sample N+2 points to exclude endpoints
+        indices = np.linspace(0, total_points-1, N+2, dtype=int)
+        sampled_points = contour[indices]
+
+        # Exclude first and last points (endpoints)
+        sampled_points = sampled_points[1:-1]
+
+        # Convert to tuples to match rotated contour format
+        result = []
+        for point in sampled_points:
+            if isinstance(point, tuple):
+                result.append(point)  # Already a tuple
+            elif hasattr(point, 'shape'):
+                result.append((int(point[0]), int(point[1])))  # Convert numpy array to tuple
+            else:
+                result.append((int(point[0][0]), int(point[0][1])))  # Convert nested array to tuple
+
+        return result
+
+
+    print("Debug: contour1 =", contour1)
+    print("Debug: contour1 type =", contour1.__class__)
+    print("Debug: contour2 =", contour2)
+    print("Debug: contour2 type =", contour2.__class__)
 
     # Sample points
+    # In the main function, after sampling points:
     sample_points1 = sample_points_along_edge(contour1, N)
     sample_points2 = sample_points_along_edge(contour2, N)
+
+    # Calculate tangent directions for each sampled point
+    def calculate_tangent_directions(contour, sample_points):
+        tangent_directions = []
+        for i, point in enumerate(sample_points):
+            if i == 0:
+                # First point: use direction to next point
+                next_pt = sample_points[i + 1]
+                tangent = (next_pt[0] - point[0], next_pt[1] - point[1])
+            elif i == len(sample_points) - 1:
+                # Last point: use direction from previous point
+                prev_pt = sample_points[i - 1]
+                tangent = (point[0] - prev_pt[0], point[1] - prev_pt[1])
+            else:
+                # Middle points: use direction from previous to next
+                prev_pt = sample_points[i - 1]
+                next_pt = sample_points[i + 1]
+                tangent = (next_pt[0] - prev_pt[0], next_pt[1] - prev_pt[1])
+
+            # Normalize tangent
+            length = np.sqrt(tangent[0]**2 + tangent[1]**2)
+            if length > 0:
+                tangent = (tangent[0]/length, tangent[1]/length)
+            else:
+                tangent = (1, 0)  # Default
+
+            tangent_directions.append(tangent)
+
+        return tangent_directions
+
+    tangent_directions1 = calculate_tangent_directions(contour1, sample_points1)
+    tangent_directions2 = calculate_tangent_directions(contour2, sample_points2)
+
+    original_edge_points1 = sample_points1.copy()
+    original_edge_points2 = sample_points2.copy()
 
     # Reverse the second contour for comparison (since they should fit together)
     sample_points2 = sample_points2[::-1]
 
     # Function to get color at a point and slightly inside the piece
     # Replace the get_color_at_point function in compute_edge_matching_score with this improved version
-    def get_color_at_point(piece, point, inward_offset=0):
-        x, y = point[0]
+    def get_color_at_point(piece, point, inward_offset=0, tangent_direction=None):
+        # All points should now be tuples (x, y)
+        x, y = point
 
-        # Calculate piece center
-        cx, cy = piece.absolute_center
-
-        # [Same logic to calculate dx, dy as before]
-        contour = piece.absolute_contour
+        # Use rotated center and contour
+        cx, cy = piece.rotated_center
+        contour = piece.rotated_contour
         idx = None
 
-        # Find the index of the current point in the contour
-        for i, pt in enumerate(contour):
-            if np.array_equal(pt[0], [x, y]):
-                idx = i
-                break
-
-        if idx is None:
-            # If point not found, use center-based approach as fallback
-            dx, dy = cx - x, cy - y
-            length = np.sqrt(dx**2 + dy**2)
-            if length > 0:
-                dx, dy = dx/length, dy/length
-            else:
-                return np.array([0, 0, 0]), (x, y)  # Default color if at center
-        else:
-            # Get points before and after
-            prev_idx = (idx - 1) % len(contour)
-            next_idx = (idx + 1) % len(contour)
-
-            prev_pt = contour[prev_idx][0]
-            next_pt = contour[next_idx][0]
-
-            # Calculate tangent vector (average of vectors to prev and next points)
-            tangent_x = next_pt[0] - prev_pt[0]
-            tangent_y = next_pt[1] - prev_pt[1]
-
-            # Normalize
-            tangent_length = np.sqrt(tangent_x**2 + tangent_y**2)
-            if tangent_length > 0:
-                tangent_x /= tangent_length
-                tangent_y /= tangent_length
+        # Find the closest point in the contour (handle floating point precision issues)
+        if tangent_direction is not None:
+            tangent_x, tangent_y = tangent_direction
 
             # Perpendicular vector (inward direction for counter-clockwise contour)
-            # For counter-clockwise contour, inward is to the right of tangent
             dx = -tangent_y  # Perpendicular and inward
             dy = tangent_x
 
+            # Use rotated center
+            cx, cy = piece.rotated_center
+
             # Verify direction is inward (should point towards center)
-            # If not, flip the direction
             if (dx * (cx - x) + dy * (cy - y)) < 0:
                 dx = -dx
                 dy = -dy
+        else:
+            # Fallback: use a small step along the edge and find inward direction
+            # by testing which direction leads to valid piece pixels
+            print(f"Warning: No tangent direction provided for piece {piece.piece_id}")
+
+            # Try multiple directions and pick the one that hits valid pixels
+            test_directions = [(0, 1), (1, 0), (0, -1), (-1, 0), (0.707, 0.707), (-0.707, 0.707)]
+
+            for test_dx, test_dy in test_directions:
+                test_x = int(x + test_dx * inward_offset)
+                test_y = int(y + test_dy * inward_offset)
+
+                if (0 <= test_x < piece.rotated_image.shape[1] and
+                        0 <= test_y < piece.rotated_image.shape[0] and
+                        piece.rotated_image[test_y, test_x, 3] > 0):  # Valid alpha
+                    dx, dy = test_dx, test_dy
+                    break
+            else:
+                dx, dy = 0, 1  # Ultimate fallback
 
         # Calculate point slightly inside the piece
         inside_x = int(x + dx * inward_offset)
         inside_y = int(y + dy * inward_offset)
 
         # Make sure coordinates are within image bounds
-        h, w = piece.mask.shape[:2]
+        # Use rotated image dimensions instead of original mask
+        h, w = piece.rotated_image.shape[:2]
         inside_x = max(0, min(inside_x, w-1))
         inside_y = max(0, min(inside_y, h-1))
 
-        # Get color from original image at this point
-        if piece.mask[inside_y, inside_x] > 0:  # Check if point is inside the mask
-            color = original_image[inside_y, inside_x]
+        # Get color from rotated image instead of original image
+        # Check if the point has valid alpha (not transparent)
+        if piece.rotated_image[inside_y, inside_x, 3] > 0:  # Check alpha channel
+            color = piece.rotated_image[inside_y, inside_x, :3]  # Get BGR channels
             # Check if the color is not black (background)
             if np.sum(color) > 30:  # simple threshold to avoid black pixels
                 return color, (inside_x, inside_y)
 
-        # If outside mask or color is black, try a different offset
+        # If outside valid area or color is black, try a different offset
         for offset in [7, 10, 15]:
             new_x = int(x + dx * offset)
             new_y = int(y + dy * offset)
             new_x = max(0, min(new_x, w-1))
             new_y = max(0, min(new_y, h-1))
-            if 0 <= new_y < h and 0 <= new_x < w and piece.mask[new_y, new_x] > 0:
-                color = original_image[new_y, new_x]
+            if 0 <= new_y < h and 0 <= new_x < w and piece.rotated_image[new_y, new_x, 3] > 0:
+                color = piece.rotated_image[new_y, new_x, :3]
                 if np.sum(color) > 30:
                     return color, (new_x, new_y)
 
@@ -1672,8 +1727,9 @@ def compute_edge_matching_score(piece1, edge1_idx, piece2, edge2_idx, debug=Fals
 
     inward_offset = 8
 
-    colors_and_points1 = [get_color_at_point(piece1, pt, inward_offset) for pt in sample_points1]
-    colors_and_points2 = [get_color_at_point(piece2, pt, inward_offset) for pt in sample_points2]
+    colors_and_points1 = [get_color_at_point(piece1, pt, inward_offset, tangent_directions1[i]) for i, pt in enumerate(sample_points1)]
+
+    colors_and_points2 = [get_color_at_point(piece2, pt, inward_offset, tangent_directions2[i]) for i, pt in enumerate(sample_points2)]
 
 
     # print("---------DEBUGGING---------")
@@ -1696,8 +1752,7 @@ def compute_edge_matching_score(piece1, edge1_idx, piece2, edge2_idx, debug=Fals
     # Filter out black points (background)
     valid_indices = []
     for i in range(N):
-        if np.sum(colors1[i]) > 30 and np.sum(colors2[i]) > 30:  # Not black
-            valid_indices.append(i)
+        valid_indices.append(i)
 
     if len(valid_indices) < 3:
         # Not enough valid color points to compare
@@ -1754,6 +1809,82 @@ def compute_edge_matching_score(piece1, edge1_idx, piece2, edge2_idx, debug=Fals
 
     ### V4
     # Convert BGR colors to HSV (ignore V channel for better perceptual matching)
+    # def bgr_to_hs(bgr_color):
+    #     bgr_color = np.array(bgr_color, dtype=np.uint8)
+    #     if bgr_color.shape == (3,):
+    #         bgr_color = bgr_color.reshape(1, 1, 3)
+    #     hsv = cv2.cvtColor(bgr_color, cv2.COLOR_BGR2HSV)[0][0]
+    #     return hsv[:2].astype(np.float32)
+    #
+    # color_diffs = []
+    # sq_diffs = []
+    #
+    # for i in valid_indices:
+    #     try:
+    #         hs1 = bgr_to_hs(colors1[i])
+    #         hs2 = bgr_to_hs(colors2[i])
+    #
+    #         # Handle hue wraparound and normalize to 0-255 range like RGB
+    #         h_diff = min(abs(hs1[0] - hs2[0]), 180 - abs(hs1[0] - hs2[0])) * (255/180)
+    #         s_diff = (hs1[1] - hs2[1])**2
+    #
+    #         # === INSERT PENALTY FOR GREY vs COLOR HERE ===
+    #         if (hs1[1] < 10 and hs2[1] > 40) or (hs2[1] < 10 and hs1[1] > 40):
+    #             extra_penalty = 500
+    #         else:
+    #             extra_penalty = 0
+    #
+    #         # Use squared differences
+    #         sq_diff = h_diff**2 + s_diff**2 + extra_penalty
+    #         sq_diffs.append(sq_diff)
+    #
+    #         color_diffs.append(np.exp(-sq_diff / 1000.0))
+    #
+    #     except:
+    #         color_diffs.append(0.0)
+    #         sq_diffs.append(1000.0)
+    #
+    #
+    # # Avg similarity score (same as original)
+    # score = np.mean(color_diffs)
+    # score = max(0, min(1, score))
+    #
+    # # Edge length comparison
+    # def get_edge_length(piece, edge_idx):
+    #     if hasattr(piece, 'rotated_corners') and piece.rotated_corners:
+    #         start_corner = piece.rotated_corners[edge_idx]
+    #         end_corner = piece.rotated_corners[(edge_idx + 1) % len(piece.rotated_corners)]
+    #     else:
+    #         start_corner = piece.relative_contour[piece.edges[edge_idx][1]][0]
+    #         end_corner = piece.relative_contour[piece.edges[edge_idx][2]][0]
+    #
+    #     distance = np.sqrt((end_corner[0] - start_corner[0])**2 + (end_corner[1] - start_corner[1])**2)
+    #     return distance
+    #
+    # edge1_length = get_edge_length(piece1, edge1_idx)
+    # edge2_length = get_edge_length(piece2, edge2_idx)
+    #
+    # # Calculate length difference percentage
+    # length_diff_percent = abs(edge1_length - edge2_length) / max(edge1_length, edge2_length)
+    #
+    # # Convert to score (0-1, where 1 is best match)
+    # if length_diff_percent <= 0.05:  # Less than 5% difference
+    #     length_score = 1.0
+    # elif length_diff_percent >= 0.30:  # More than 30% difference
+    #     length_score = 0.0
+    # else:
+    #     # Linear interpolation between 5% and 30%
+    #     length_score = 1.0 - ((length_diff_percent - 0.05) / (0.30 - 0.05))
+    #
+    # # Combine with color score (you can adjust the weighting)
+    # final_score = (score * 0.5) + (length_score * 0.5)  # 70% color, 30% length
+    # score = max(0, min(1, final_score))
+    #
+    # # Also keep avg_diff and max_possible_diff
+    # avg_diff = np.mean(sq_diffs)
+    # max_possible_diff = (255**2) * 3
+
+
     def bgr_to_hs(bgr_color):
         bgr_color = np.array(bgr_color, dtype=np.uint8)
         if bgr_color.shape == (3,):
@@ -1761,34 +1892,191 @@ def compute_edge_matching_score(piece1, edge1_idx, piece2, edge2_idx, debug=Fals
         hsv = cv2.cvtColor(bgr_color, cv2.COLOR_BGR2HSV)[0][0]
         return hsv[:2].astype(np.float32)
 
+    def get_edge_points(piece, edge_idx):
+        """Extract the actual edge points for shape comparison"""
+        if hasattr(piece, 'rotated_corners') and piece.rotated_corners:
+            # If using rotated corners, we need to get the edge segment
+            start_corner = piece.rotated_corners[edge_idx]
+            end_corner = piece.rotated_corners[(edge_idx + 1) % len(piece.rotated_corners)]
+            # This is a simplified approach - you might need to extract actual contour points
+            # between these corners from the piece's contour
+            return np.array([start_corner, end_corner])
+        else:
+            # Extract contour points for this edge
+            edge_info = piece.edges[edge_idx]
+            start_idx = edge_info[1]  # Start point index
+            end_idx = edge_info[2]    # End point index
+
+            # Get contour points between start and end indices
+            if start_idx <= end_idx:
+                edge_points = piece.relative_contour[start_idx:end_idx+1]
+            else:
+                # Handle wraparound case
+                edge_points = np.concatenate([
+                    piece.relative_contour[start_idx:],
+                    piece.relative_contour[:end_idx+1]
+                ])
+
+            return np.array([point[0] for point in edge_points])
+
+    def normalize_edge_shape(edge_points):
+        """Normalize edge shape for comparison"""
+        if len(edge_points) < 2:
+            return edge_points
+
+        # Center the edge points
+        centroid = np.mean(edge_points, axis=0)
+        centered = edge_points - centroid
+
+        # Scale to unit length
+        edge_length = np.sqrt(np.sum((edge_points[-1] - edge_points[0])**2))
+        if edge_length > 0:
+            normalized = centered / edge_length
+        else:
+            normalized = centered
+
+        return normalized
+
+    def resample_edge(edge_points, num_points=50):
+        """Resample edge to have consistent number of points for comparison"""
+        if len(edge_points) < 2:
+            return edge_points
+
+        # Calculate cumulative distances along the edge
+        distances = [0]
+        for i in range(1, len(edge_points)):
+            dist = np.sqrt(np.sum((edge_points[i] - edge_points[i-1])**2))
+            distances.append(distances[-1] + dist)
+
+        total_length = distances[-1]
+        if total_length == 0:
+            return edge_points
+
+        # Create evenly spaced points along the edge
+        target_distances = np.linspace(0, total_length, num_points)
+        resampled_points = []
+
+        for target_dist in target_distances:
+            # Find the segment containing this distance
+            for i in range(len(distances) - 1):
+                if distances[i] <= target_dist <= distances[i + 1]:
+                    # Interpolate between points i and i+1
+                    if distances[i + 1] == distances[i]:
+                        ratio = 0
+                    else:
+                        ratio = (target_dist - distances[i]) / (distances[i + 1] - distances[i])
+
+                    interpolated_point = (1 - ratio) * edge_points[i] + ratio * edge_points[i + 1]
+                    resampled_points.append(interpolated_point)
+                    break
+
+        return np.array(resampled_points)
+
+    def calculate_shape_score(piece1, edge1_idx, piece2, edge2_idx):
+        """Calculate shape similarity score between two edges"""
+        try:
+            # Get edge points
+            edge1_points = get_edge_points(piece1, edge1_idx)
+            edge2_points = get_edge_points(piece2, edge2_idx)
+
+            if len(edge1_points) < 2 or len(edge2_points) < 2:
+                return 0.0
+
+            # Resample to same number of points
+            edge1_resampled = resample_edge(edge1_points, num_points=50)
+            edge2_resampled = resample_edge(edge2_points, num_points=50)
+
+            # Normalize shapes
+            edge1_norm = normalize_edge_shape(edge1_resampled)
+            edge2_norm = normalize_edge_shape(edge2_resampled)
+
+            # For puzzle pieces, one edge should be the "reverse" of the other
+            # So we flip edge2 to match orientation
+            edge2_flipped = edge2_norm[::-1]
+
+            # Calculate point-to-point distances
+            distances = np.sqrt(np.sum((edge1_norm - edge2_flipped)**2, axis=1))
+            avg_distance = np.mean(distances)
+
+            # Convert distance to similarity score (0-1, where 1 is perfect match)
+            # Adjust the scaling factor based on your puzzle piece precision
+            shape_score = np.exp(-avg_distance * 10)  # Adjust multiplier as needed
+
+            return max(0, min(1, shape_score))
+
+        except Exception as e:
+            print(f"Shape comparison error: {e}")
+            return 0.0
+
+    # Improved color comparison focusing on actual color similarity
     color_diffs = []
     sq_diffs = []
 
     for i in valid_indices:
         try:
+            # Get BGR colors
+            bgr1 = np.array(colors1[i], dtype=np.float32)
+            bgr2 = np.array(colors2[i], dtype=np.float32)
+
+            # Convert to HSV for better color analysis
             hs1 = bgr_to_hs(colors1[i])
             hs2 = bgr_to_hs(colors2[i])
 
-            # Handle hue wraparound and normalize to 0-255 range like RGB
-            h_diff = min(abs(hs1[0] - hs2[0]), 180 - abs(hs1[0] - hs2[0])) * (255/180)  # Scale hue to RGB range
-            s_diff = abs(hs1[1] - hs2[1])
+            # Simple RGB distance for base comparison
+            rgb_dist = np.sqrt(np.sum((bgr1 - bgr2)**2))
 
-            # Use squared differences like the original (but only H and S channels)
-            sq_diff = h_diff**2 + s_diff**2  # Only 2 channels instead of 3
+            # Saturation-aware comparison
+            sat1, sat2 = hs1[1], hs2[1]
+
+            # Both colors are very unsaturated (grey-ish)
+            if sat1 < 20 and sat2 < 20:
+                # For grey colors, focus mainly on brightness similarity
+                brightness1 = np.mean(bgr1)
+                brightness2 = np.mean(bgr2)
+                brightness_diff = abs(brightness1 - brightness2)
+                color_similarity = np.exp(-brightness_diff / 50.0)
+
+            # Both colors are saturated - compare hue and saturation
+            elif sat1 > 30 and sat2 > 30:
+                # Hue comparison with wraparound
+                hue_diff = min(abs(hs1[0] - hs2[0]), 180 - abs(hs1[0] - hs2[0]))
+                sat_diff = abs(sat1 - sat2)
+
+                # Weight hue difference more heavily for saturated colors
+                hue_score = np.exp(-hue_diff / 15.0)  # More sensitive to hue differences
+                sat_score = np.exp(-sat_diff / 30.0)
+
+                # Combine hue and saturation scores
+                color_similarity = (hue_score * 0.7) + (sat_score * 0.3)
+
+            # One saturated, one unsaturated - this should be penalized
+            else:
+                # Heavy penalty for mixing saturated and unsaturated colors
+                sat_diff = abs(sat1 - sat2)
+                color_similarity = np.exp(-(sat_diff + 50) / 30.0)  # Extra penalty
+
+            # Also consider RGB distance as a backup
+            rgb_similarity = np.exp(-rgb_dist / 80.0)
+
+            # Combine both similarities - favor the HSV approach but use RGB as backup
+            final_similarity = (color_similarity * 0.8) + (rgb_similarity * 0.2)
+
+            color_diffs.append(final_similarity)
+
+            # Store squared difference for backward compatibility
+            sq_diff = rgb_dist**2
             sq_diffs.append(sq_diff)
 
-            # Use the same exponential formula as original (keep the 1000.0 divisor!)
-            color_diffs.append(np.exp(-sq_diff / 1000.0))
-
-        except:
-            color_diffs.append(0.0)  # Bad match if conversion fails
-            sq_diffs.append(1000.0)
+        except Exception as e:
+            print(f"Color comparison error: {e}")
+            color_diffs.append(0.0)
+            sq_diffs.append(10000.0)
 
     # Avg similarity score (same as original)
-    score = np.mean(color_diffs)
-    score = max(0, min(1, score))
+    color_score = np.mean(color_diffs)
+    color_score = max(0, min(1, color_score))
 
-    # Edge length comparison
+    # Edge length comparison (your existing code)
     def get_edge_length(piece, edge_idx):
         if hasattr(piece, 'rotated_corners') and piece.rotated_corners:
             start_corner = piece.rotated_corners[edge_idx]
@@ -1815,8 +2103,11 @@ def compute_edge_matching_score(piece1, edge1_idx, piece2, edge2_idx, debug=Fals
         # Linear interpolation between 5% and 30%
         length_score = 1.0 - ((length_diff_percent - 0.05) / (0.30 - 0.05))
 
-    # Combine with color score (you can adjust the weighting)
-    final_score = (score * 0.5) + (length_score * 0.5)  # 70% color, 30% length
+    # NEW: Shape comparison score
+    shape_score = calculate_shape_score(piece1, edge1_idx, piece2, edge2_idx)
+
+    # Combine all scores with weights (adjust as needed)
+    final_score = (color_score * 0.6) + (length_score * 0.1) + (shape_score * 0.3)
     score = max(0, min(1, final_score))
 
     # Also keep avg_diff and max_possible_diff
@@ -1824,33 +2115,33 @@ def compute_edge_matching_score(piece1, edge1_idx, piece2, edge2_idx, debug=Fals
     max_possible_diff = (255**2) * 3
 
 
-    if debug:
-        print(f"Edge {edge1_idx} of piece {piece1.piece_id} (OUT) and edge {edge2_idx} of piece {piece2.piece_id} (IN)")
-        print(f"Average color difference: {avg_diff:.2f}, Score: {score:.2f}")
-
-        # Create debug visualization
-        debug_img1 = piece1.rotated_image.copy()
-        debug_img2 = piece2.rotated_image.copy()
-
-        # Mark the sample points
-        for pt in sample_points1.reshape(-1, 2):
-            cv2.circle(debug_img1, (pt[0], pt[1]), 3, (0, 255, 255, 255), -1)
-
-        for pt in sample_points2.reshape(-1, 2):
-            cv2.circle(debug_img2, (pt[0], pt[1]), 3, (0, 255, 255, 255), -1)
-
-        # Save debug images
-        debug_path1 = os.path.join(output_tests, f"match_debug_p{piece1.piece_id}_e{edge1_idx}.png")
-        debug_path2 = os.path.join(output_tests, f"match_debug_p{piece2.piece_id}_e{edge2_idx}.png")
-        cv2.imwrite(debug_path1, debug_img1)
-        cv2.imwrite(debug_path2, debug_img2)
+    # if debug:
+    #     print(f"Edge {edge1_idx} of piece {piece1.piece_id} (OUT) and edge {edge2_idx} of piece {piece2.piece_id} (IN)")
+    #     print(f"Average color difference: {avg_diff:.2f}, Score: {score:.2f}")
+    #
+    #     # Create debug visualization
+    #     debug_img1 = piece1.rotated_image.copy()
+    #     debug_img2 = piece2.rotated_image.copy()
+    #
+    #     # Mark the sample points
+    #     for pt in sample_points1.reshape(-1, 2):
+    #         cv2.circle(debug_img1, (pt[0], pt[1]), 3, (0, 255, 255, 255), -1)
+    #
+    #     for pt in sample_points2.reshape(-1, 2):
+    #         cv2.circle(debug_img2, (pt[0], pt[1]), 3, (0, 255, 255, 255), -1)
+    #
+    #     # Save debug images
+    #     debug_path1 = os.path.join(output_tests, f"match_debug_p{piece1.piece_id}_e{edge1_idx}.png")
+    #     debug_path2 = os.path.join(output_tests, f"match_debug_p{piece2.piece_id}_e{edge2_idx}.png")
+    #     cv2.imwrite(debug_path1, debug_img1)
+    #     cv2.imwrite(debug_path2, debug_img2)
 
 
     #### DEBUG PRINT PIECE MATCHING TO CV2 IMAGE ####
 
     if debug:
         # Create output directory
-        output_matching = "images/matching"
+        output_matching = f"{base_path}/matching"
         os.makedirs(output_matching, exist_ok=True)
 
         # Create a visualization of the edge matching
@@ -1865,8 +2156,10 @@ def compute_edge_matching_score(piece1, edge1_idx, piece2, edge2_idx, debug=Fals
         margin = 50
         divider_x = visualization_width // 2
 
+        c_score = score
+
         # Draw title
-        title = f"Edge Match: P{piece1.piece_id}(E{edge1_idx}) vs P{piece2.piece_id}(E{edge2_idx}) - Score: {score:.3f}"
+        title = f"P{piece1.piece_id}(E{edge1_idx}) vs P{piece2.piece_id}(E{edge2_idx}) - CS {c_score:.3f} SC: {shape_score} DS: {length_score:.3f}"
         cv2.putText(visualization, title, (50, 30),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 0, 255), 2)
 
@@ -1926,16 +2219,16 @@ def compute_edge_matching_score(piece1, edge1_idx, piece2, edge2_idx, debug=Fals
                 alpha = region1[:, :, 3:4] / 255.0
                 if c < 3:  # RGB channels
                     visualization[y_offset1:y_offset1+region1.shape[0],
-                                 x_offset1:x_offset1+region1.shape[1], c] = (
-                        visualization[y_offset1:y_offset1+region1.shape[0],
-                                     x_offset1:x_offset1+region1.shape[1], c] * (1 - alpha[:, :, 0]) +
-                        region1[:, :, c] * alpha[:, :, 0]
+                    x_offset1:x_offset1+region1.shape[1], c] = (
+                            visualization[y_offset1:y_offset1+region1.shape[0],
+                            x_offset1:x_offset1+region1.shape[1], c] * (1 - alpha[:, :, 0]) +
+                            region1[:, :, c] * alpha[:, :, 0]
                     )
                 else:  # Alpha channel
                     visualization[y_offset1:y_offset1+region1.shape[0],
-                                  x_offset1:x_offset1+region1.shape[1], 3] = np.maximum(
+                    x_offset1:x_offset1+region1.shape[1], 3] = np.maximum(
                         visualization[y_offset1:y_offset1+region1.shape[0],
-                                      x_offset1:x_offset1+region1.shape[1], 3],
+                        x_offset1:x_offset1+region1.shape[1], 3],
                         region1[:, :, 3]
                     )
 
@@ -1944,16 +2237,16 @@ def compute_edge_matching_score(piece1, edge1_idx, piece2, edge2_idx, debug=Fals
                 alpha = region2[:, :, 3:4] / 255.0
                 if c < 3:  # RGB channels
                     visualization[y_offset2:y_offset2+region2.shape[0],
-                                 x_offset2:x_offset2+region2.shape[1], c] = (
-                        visualization[y_offset2:y_offset2+region2.shape[0],
-                                     x_offset2:x_offset2+region2.shape[1], c] * (1 - alpha[:, :, 0]) +
-                        region2[:, :, c] * alpha[:, :, 0]
+                    x_offset2:x_offset2+region2.shape[1], c] = (
+                            visualization[y_offset2:y_offset2+region2.shape[0],
+                            x_offset2:x_offset2+region2.shape[1], c] * (1 - alpha[:, :, 0]) +
+                            region2[:, :, c] * alpha[:, :, 0]
                     )
                 else:  # Alpha channel
                     visualization[y_offset2:y_offset2+region2.shape[0],
-                                  x_offset2:x_offset2+region2.shape[1], 3] = np.maximum(
+                    x_offset2:x_offset2+region2.shape[1], 3] = np.maximum(
                         visualization[y_offset2:y_offset2+region2.shape[0],
-                                      x_offset2:x_offset2+region2.shape[1], 3],
+                        x_offset2:x_offset2+region2.shape[1], 3],
                         region2[:, :, 3]
                     )
 
@@ -1990,26 +2283,29 @@ def compute_edge_matching_score(piece1, edge1_idx, piece2, edge2_idx, debug=Fals
             pt1_rel = (pt1[0] - piece1.bounding_rect[0], pt1[1] - piece1.bounding_rect[1])
             pt2_rel = (pt2[0] - piece2.bounding_rect[0], pt2[1] - piece2.bounding_rect[1])
 
-            # Now apply the rotation transformation if it exists
-            if hasattr(piece1, 'rotation_matrix') and piece1.rotation_matrix is not None:
-                # Apply offset for expanded canvas
-                pt1_expanded = (pt1_rel[0] + piece1.expansion_offset[0],
-                                pt1_rel[1] + piece1.expansion_offset[1], 1)
-                # Apply rotation matrix
-                pt1_rotated = piece1.rotation_matrix @ pt1_expanded
-                pt1_rotated = pt1_rotated[:2].astype(int)
-            else:
-                pt1_rotated = pt1_rel
+            # # Now apply the rotation transformation if it exists
+            # if hasattr(piece1, 'rotation_matrix') and piece1.rotation_matrix is not None:
+            #     # Apply offset for expanded canvas
+            #     pt1_expanded = (pt1_rel[0] + piece1.expansion_offset[0],
+            #                     pt1_rel[1] + piece1.expansion_offset[1], 1)
+            #     # Apply rotation matrix
+            #     pt1_rotated = piece1.rotation_matrix @ pt1_expanded
+            #     pt1_rotated = pt1_rotated[:2].astype(int)
+            # else:
+            #     pt1_rotated = pt1_rel
+            #
+            # if hasattr(piece2, 'rotation_matrix') and piece2.rotation_matrix is not None:
+            #     # Apply offset for expanded canvas
+            #     pt2_expanded = (pt2_rel[0] + piece2.expansion_offset[0],
+            #                     pt2_rel[1] + piece2.expansion_offset[1], 1)
+            #     # Apply rotation matrix
+            #     pt2_rotated = piece2.rotation_matrix @ pt2_expanded
+            #     pt2_rotated = pt2_rotated[:2].astype(int)
+            # else:
+            #     pt2_rotated = pt2_rel
 
-            if hasattr(piece2, 'rotation_matrix') and piece2.rotation_matrix is not None:
-                # Apply offset for expanded canvas
-                pt2_expanded = (pt2_rel[0] + piece2.expansion_offset[0],
-                                pt2_rel[1] + piece2.expansion_offset[1], 1)
-                # Apply rotation matrix
-                pt2_rotated = piece2.rotation_matrix @ pt2_expanded
-                pt2_rotated = pt2_rotated[:2].astype(int)
-            else:
-                pt2_rotated = pt2_rel
+            pt1_rotated = pt1  # Points are already in rotated space
+            pt2_rotated = pt2  # Points are already in rotated space
 
             # Now transform to visualization coordinates
             # Calculate position within extracted region (bounds1/bounds2 are x1,y1,x2,y2)
@@ -2037,7 +2333,7 @@ def compute_edge_matching_score(piece1, edge1_idx, piece2, edge2_idx, debug=Fals
 
 
             if 0 <= vis_x1 < visualization_width and 0 <= vis_y1 < visualization_height:
-                cv2.circle(visualization, (vis_x1, vis_y1), 5, color, -1)
+                cv2.circle(visualization, (vis_x1, vis_y1), 2, color, -1)
                 cv2.putText(visualization, str(i+1), (vis_x1-5, vis_y1-5),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0, 255), 1)
 
@@ -2048,9 +2344,43 @@ def compute_edge_matching_score(piece1, edge1_idx, piece2, edge2_idx, debug=Fals
             #                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0, 255), 1)
 
             if 0 <= vis_x2 < visualization_width and 0 <= vis_y2 < visualization_height:
-                cv2.circle(visualization, (vis_x2, vis_y2), 5, color, -1)
+                cv2.circle(visualization, (vis_x2, vis_y2), 2, color, -1)
                 cv2.putText(visualization, str(i+1), (vis_x2-5, vis_y2-5),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0, 255), 1)
+
+
+        # Draw original edge points in black
+        for i, idx in enumerate(valid_indices):
+            # Get original edge points (before inward translation)
+            edge_pt1 = original_edge_points1[idx]
+            edge_pt2 = original_edge_points2[idx]
+
+            # Transform to visualization coordinates (same logic as for colored circles)
+            # For piece 1
+            pt1_rotated = edge_pt1  # Already in rotated space
+            rel_x1 = pt1_rotated[0] - bounds1[0]
+            rel_y1 = pt1_rotated[1] - bounds1[1]
+            rel_x1 = int(rel_x1 * scale1)
+            rel_y1 = int(rel_y1 * scale1)
+            vis_x1 = x_offset1 + rel_x1
+            vis_y1 = y_offset1 + rel_y1
+
+            # For piece 2
+            pt2_rotated = edge_pt2  # Already in rotated space
+            rel_x2 = pt2_rotated[0] - bounds2[0]
+            rel_y2 = pt2_rotated[1] - bounds2[1]
+            rel_x2 = int(rel_x2 * scale2)
+            rel_y2 = int(rel_y2 * scale2)
+            vis_x2 = x_offset2 + rel_x2
+            vis_y2 = y_offset2 + rel_y2
+
+            # Draw black circles for original edge points
+            black_color = (0, 0, 0, 255)  # Black
+            if 0 <= vis_x1 < visualization_width and 0 <= vis_y1 < visualization_height:
+                cv2.circle(visualization, (vis_x1, vis_y1), 4, black_color, -1)  # Slightly larger
+
+            if 0 <= vis_x2 < visualization_width and 0 <= vis_y2 < visualization_height:
+                cv2.circle(visualization, (vis_x2, vis_y2), 4, black_color, -1)  # Slightly larger
 
         # Draw sample colors for comparison
         sample_size = 15  # Slightly smaller squares to fit more
@@ -2107,24 +2437,27 @@ def compute_edge_matching_score(piece1, edge1_idx, piece2, edge2_idx, debug=Fals
 
             # Draw vertical connection line between the two colors
             match_quality = 1.0 - (color_diffs[i] / max_possible_diff)
-            line_color = (0, int(255 * match_quality), int(255 * (1 - match_quality)), 255)
+            line_color = (int(255 * (1 - match_quality)), int(255 * match_quality), 0, 255)
             cv2.line(visualization,
-                    (sample_x + sample_size//2, sample_y1 + sample_size),
-                    (sample_x + sample_size//2, sample_y2),
-                    line_color, 2)
+                     (sample_x + sample_size//2, sample_y1 + sample_size),
+                     (sample_x + sample_size//2, sample_y2),
+                     line_color, 2)
 
-            # Draw a colored circle to indicate match quality (red=bad, green=good)
-            score_color = (
-                0,                               # B: No blue component
-                int(255 * match_quality),        # G: More green for good matches
-                int(255 * (1 - match_quality)),  # R: More red for bad matches
-                255                              # Alpha
+            # Use the individual similarity score for this specific pixel pair
+            individual_similarity = color_diffs[i]  # This is already 0-1 where 1 = perfect match
+
+            # Create color based on individual similarity (red=bad, green=good)
+            individual_score_color = (
+                0,                                    # B: No blue
+                int(255 * individual_similarity),     # G: More green for better matches
+                int(255 * (1 - individual_similarity)), # R: More red for worse matches
+                255                                   # Alpha
             )
 
             cv2.circle(visualization,
                        (sample_x + sample_size//2, score_y),
                        score_circle_radius,
-                       score_color,
+                       individual_score_color,
                        -1)  # -1 = filled circle
 
         # Add labels for the color rows
@@ -2145,13 +2478,101 @@ def compute_edge_matching_score(piece1, edge1_idx, piece2, edge2_idx, debug=Fals
         match_filepath = os.path.join(output_matching, match_filename)
         cv2.imwrite(match_filepath, visualization)
 
-        # Also display the visualization for interactive use
+        # Also display the visualization
         # display_image_cv2(f"Edge Match (Score: {score:.3f})", visualization)
+
+        ### TXT FILE ###
+
+        # Create detailed edge analysis file
+        analysis_filename = f"edge_analysis_p{piece1.piece_id}_e{edge1_idx}_p{piece2.piece_id}_e{edge2_idx}.txt"
+        analysis_filepath = os.path.join(output_matching, analysis_filename)
+
+        with open(analysis_filepath, 'w') as f:
+            f.write(f"EDGE MATCHING ANALYSIS\n")
+            f.write(f"=====================\n\n")
+            f.write(f"Piece 1 ID: {piece1.piece_id}, Edge: {edge1_idx}\n")
+            f.write(f"Piece 2 ID: {piece2.piece_id}, Edge: {edge2_idx}\n")
+            f.write(f"Final Matching Score: {score:.4f}\n")
+            f.write(f"Color Score: {color_score:.4f}\n")
+            f.write(f"Length Score: {length_score:.4f}\n")
+            f.write(f"Shape Score: {shape_score:.4f}\n\n")
+
+            # Edge vertices for both pieces
+            f.write("PIECE 1 EDGE VERTICES:\n")
+            start_corner1 = piece1.rotated_corners[edge1_idx] if hasattr(piece1, 'rotated_corners') and piece1.rotated_corners else piece1.relative_contour[piece1.edges[edge1_idx][1]][0]
+            end_corner1 = piece1.rotated_corners[(edge1_idx + 1) % len(piece1.rotated_corners)] if hasattr(piece1, 'rotated_corners') and piece1.rotated_corners else piece1.relative_contour[piece1.edges[edge1_idx][2]][0]
+            f.write(f"  Start vertex: ({start_corner1[0]:.2f}, {start_corner1[1]:.2f})\n")
+            f.write(f"  End vertex: ({end_corner1[0]:.2f}, {end_corner1[1]:.2f})\n")
+            f.write(f"  Edge length: {edge1_length:.2f}\n\n")
+
+            f.write("PIECE 2 EDGE VERTICES:\n")
+            start_corner2 = piece2.rotated_corners[edge2_idx] if hasattr(piece2, 'rotated_corners') and piece2.rotated_corners else piece2.relative_contour[piece2.edges[edge2_idx][1]][0]
+            end_corner2 = piece2.rotated_corners[(edge2_idx + 1) % len(piece2.rotated_corners)] if hasattr(piece2, 'rotated_corners') and piece2.rotated_corners else piece2.relative_contour[piece2.edges[edge2_idx][2]][0]
+            f.write(f"  Start vertex: ({start_corner2[0]:.2f}, {start_corner2[1]:.2f})\n")
+            f.write(f"  End vertex: ({end_corner2[0]:.2f}, {end_corner2[1]:.2f})\n")
+            f.write(f"  Edge length: {edge2_length:.2f}\n\n")
+
+            f.write("SAMPLING DETAILS:\n")
+            f.write(f"Number of sample points: {N}\n")
+            f.write(f"Inward offset: {inward_offset} pixels\n")
+            f.write(f"Valid color points: {len(valid_indices)}\n\n")
+
+            # Detailed point analysis
+            f.write("POINT-BY-POINT ANALYSIS:\n")
+            f.write("=" * 80 + "\n")
+
+            for i, idx in enumerate(valid_indices):
+                f.write(f"\nPoint {i+1} (Sample index {idx}):\n")
+                f.write("-" * 40 + "\n")
+
+                # Original edge points
+                edge_pt1 = sample_points1[idx]  # Now it's directly (x, y)
+                edge_pt2 = sample_points2[idx]  # Now it's directly (x, y)
+                f.write(f"PIECE 1:\n")
+                f.write(f"  Edge point: ({edge_pt1[0]:.2f}, {edge_pt1[1]:.2f})\n")
+
+                # Get the inward direction vector (recreate the calculation from get_color_at_point)
+                # This is approximate since we'd need to call the function to get exact values
+                inward_pt1 = sample_inward_points1[idx]
+                direction1 = (inward_pt1[0] - edge_pt1[0], inward_pt1[1] - edge_pt1[1])
+                direction_length1 = np.sqrt(direction1[0]**2 + direction1[1]**2)
+                if direction_length1 > 0:
+                    unit_direction1 = (direction1[0]/direction_length1, direction1[1]/direction_length1)
+                else:
+                    unit_direction1 = (0, 0)
+
+                f.write(f"  Inward direction vector: ({unit_direction1[0]:.4f}, {unit_direction1[1]:.4f})\n")
+                f.write(f"  Inward sample point: ({inward_pt1[0]:.2f}, {inward_pt1[1]:.2f})\n")
+                f.write(f"  Sampled color (BGR): ({colors1[idx][0]}, {colors1[idx][1]}, {colors1[idx][2]})\n")
+
+                f.write(f"PIECE 2:\n")
+                f.write(f"  Edge point: ({edge_pt2[0]:.2f}, {edge_pt2[1]:.2f})\n")
+
+                inward_pt2 = sample_inward_points2[idx]
+                direction2 = (inward_pt2[0] - edge_pt2[0], inward_pt2[1] - edge_pt2[1])
+                direction_length2 = np.sqrt(direction2[0]**2 + direction2[1]**2)
+                if direction_length2 > 0:
+                    unit_direction2 = (direction2[0]/direction_length2, direction2[1]/direction_length2)
+                else:
+                    unit_direction2 = (0, 0)
+
+                f.write(f"  Inward direction vector: ({unit_direction2[0]:.4f}, {unit_direction2[1]:.4f})\n")
+                f.write(f"  Inward sample point: ({inward_pt2[0]:.2f}, {inward_pt2[1]:.2f})\n")
+                f.write(f"  Sampled color (BGR): ({colors2[idx][0]}, {colors2[idx][1]}, {colors2[idx][2]})\n")
+
+                f.write(f"COLOR COMPARISON:\n")
+                f.write(f"  Individual similarity score: {color_diffs[i]:.4f}\n")
+
+                # Calculate RGB distance for reference
+                rgb_dist = np.sqrt(np.sum((colors1[idx].astype(float) - colors2[idx].astype(float))**2))
+                f.write(f"  RGB distance: {rgb_dist:.2f}\n")
+
+        print(f"Detailed analysis saved to: {analysis_filepath}")
 
     return score
 
 
-# In[91]:
+# In[1122]:
 
 
 all_matches = []
@@ -2225,7 +2646,7 @@ for piece in pieces_to_match:
 my_puzzle.all_edge_matches = all_matches
 
 
-# In[92]:
+# In[1123]:
 
 
 # Sort all matches by score (highest first)
@@ -2263,7 +2684,7 @@ my_puzzle.edge_match_lookup = edge_match_lookup
 print("Match calculation complete and stored in my_puzzle.all_edge_matches and my_puzzle.edge_match_lookup")
 
 
-# In[93]:
+# In[1124]:
 
 
 class GridCanvas:
@@ -2372,22 +2793,22 @@ class GridCanvas:
                                     )
 
                             # Draw orange rectangle around the piece's bounding box
-                            cv2.rectangle(self.canvas,
-                                         (x_start, y_start),
-                                         (canvas_x_end, canvas_y_end),
-                                         (0, 165, 255, 255), 2)  # BGR format: Orange
+                            # cv2.rectangle(self.canvas,
+                            #              (x_start, y_start),
+                            #              (canvas_x_end, canvas_y_end),
+                            #              (0, 165, 255, 255), 2)  # BGR format: Orange
                     else:
                         print(f"Warning: Piece {piece_id} does not have a rotated_image")
 
                 # Draw a purple dot at the exact grid coordinate to verify placement
-                cv2.circle(self.canvas, (x, y), 5, (255, 0, 255, 255), -1)  # BGR format: Purple, -1 means filled circle
+                # cv2.circle(self.canvas, (x, y), 5, (255, 0, 255, 255), -1)  # BGR format: Purple, -1 means filled circle
 
     def save(self, filename="grid_arrangement.png"):
         # Render the grid before saving
         self.render_grid()
 
         # Ensure the output directory exists
-        output_dir = "images/grid_arrangement"
+        output_dir = f"{base_path}/grid_arrangement"
         os.makedirs(output_dir, exist_ok=True)
 
         # Full path
@@ -2398,51 +2819,51 @@ class GridCanvas:
         print(f"Grid arrangement saved to {filepath}")
 
 
-# In[94]:
+# In[1125]:
 
 
-# Create a grid canvas
-grid_canvas = GridCanvas(
-    width=1800,
-    height=1200,
-    rows=puzzle_r,
-    cols=puzzle_c,
-    column_spacing=250,
-    row_spacing=250,
-    margin=100
-)
+# # Create a grid canvas
+# grid_canvas = GridCanvas(
+#     width=1800,
+#     height=1200,
+#     rows=puzzle_r,
+#     cols=puzzle_c,
+#     column_spacing=250,
+#     row_spacing=250,
+#     margin=100
+# )
+#
+# # Place pieces with direct IDs - only updates the rep_array, not the visualization
+#
+# # Manual placement for testing
+# grid_canvas.place_piece(17, 0, 0, rotation=1)
+# grid_canvas.place_piece(14, 0, 1, rotation=1)
+# grid_canvas.place_piece(4, 0, 2, rotation=1)
+# grid_canvas.place_piece(1, 0, 3, rotation=1)
+# grid_canvas.place_piece(13, 0, 4, rotation=1)
+# grid_canvas.place_piece(6, 0, 5, rotation=2)
+#
+# grid_canvas.place_piece(12, 1, 0, rotation=0)
+# grid_canvas.place_piece(18, 2, 0, rotation=0)
+#
+# grid_canvas.place_piece(5, 1, 5, rotation=2)
+# grid_canvas.place_piece(7, 2, 5, rotation=2)
+#
+# grid_canvas.place_piece(19, 3, 0, rotation=3)
+# grid_canvas.place_piece(16, 3, 1, rotation=3)
+# grid_canvas.place_piece(21, 3, 2, rotation=3)
+# grid_canvas.place_piece(9, 3, 3, rotation=3)
+# grid_canvas.place_piece(22, 3, 4, rotation=3)
+# grid_canvas.place_piece(2, 3, 5, rotation=3)
+#
+# # Print the grid to console
+# grid_canvas.print_grid()
+#
+# # When ready to save, the render_grid() function is called by save() to create the visualization
+# grid_canvas.save("my_puzzle_arrangement.png")
 
-# Place pieces with direct IDs - only updates the rep_array, not the visualization
 
-# Manual placement for testing
-grid_canvas.place_piece(17, 0, 0, rotation=1)
-grid_canvas.place_piece(14, 0, 1, rotation=1)
-grid_canvas.place_piece(4, 0, 2, rotation=1)
-grid_canvas.place_piece(1, 0, 3, rotation=1)
-grid_canvas.place_piece(13, 0, 4, rotation=1)
-grid_canvas.place_piece(6, 0, 5, rotation=2)
-
-grid_canvas.place_piece(12, 1, 0, rotation=0)
-grid_canvas.place_piece(18, 2, 0, rotation=0)
-
-grid_canvas.place_piece(5, 1, 5, rotation=2)
-grid_canvas.place_piece(7, 2, 5, rotation=2)
-
-grid_canvas.place_piece(19, 3, 0, rotation=3)
-grid_canvas.place_piece(16, 3, 1, rotation=3)
-grid_canvas.place_piece(21, 3, 2, rotation=3)
-grid_canvas.place_piece(9, 3, 3, rotation=3)
-grid_canvas.place_piece(22, 3, 4, rotation=3)
-grid_canvas.place_piece(2, 3, 5, rotation=3)
-
-# Print the grid to console
-grid_canvas.print_grid()
-
-# When ready to save, the render_grid() function is called by save() to create the visualization
-grid_canvas.save("my_puzzle_arrangement.png")
-
-
-# In[95]:
+# In[1126]:
 
 
 def find_adjacent_coordinates_to_explore(rep_array, placed_pieces):
@@ -2480,7 +2901,7 @@ def find_adjacent_coordinates_to_explore(rep_array, placed_pieces):
     return list(adjacent_coords)
 
 
-# In[96]:
+# In[1127]:
 
 
 def get_adjacent_pieces_for_coordinate(adjacent_info, target_row, target_col):
@@ -2496,7 +2917,7 @@ def get_adjacent_pieces_for_coordinate(adjacent_info, target_row, target_col):
     return adjacent_pieces
 
 
-# In[97]:
+# In[1128]:
 
 
 def print_adjacent_analysis(adjacent_info):
@@ -2526,7 +2947,7 @@ def print_adjacent_analysis(adjacent_info):
         print()
 
 
-# In[98]:
+# In[1129]:
 
 
 # Example usage with your current setup:
@@ -2556,7 +2977,7 @@ def test_adjacent_finder(grid_canvas):
     return adjacent_info
 
 
-# In[99]:
+# In[1130]:
 
 
 def display_piece_matches(piece):
@@ -2582,7 +3003,7 @@ def display_piece_matches(piece):
             print(f"  -> matching with piece {other_piece_id}, edge {other_edge_id}, score: {score:.4f}")
 
 
-# In[100]:
+# In[1131]:
 
 
 def get_spiral_coordinate(counter, rows, cols):
@@ -2623,7 +3044,7 @@ def get_spiral_coordinate(counter, rows, cols):
     return coordinates[counter] if counter < len(coordinates) else None
 
 
-# In[101]:
+# In[1132]:
 
 
 def get_nearby_occupied_cells(grid_canvas, target_row, target_col):
@@ -2663,7 +3084,7 @@ def get_nearby_occupied_cells(grid_canvas, target_row, target_col):
     return nearby_occupied
 
 
-# In[102]:
+# In[1133]:
 
 
 def get_direction_name_from_index(index):
@@ -2705,7 +3126,7 @@ def calculate_rotation_needed(piece, target_edge_id, target_direction_name):
     return rotations_needed
 
 
-# In[103]:
+# In[1134]:
 
 
 def is_corner_position(row, col, rows, cols):
@@ -2735,7 +3156,7 @@ def get_piece_type(piece):
     return "UNKNOWN"
 
 
-# In[119]:
+# In[1135]:
 
 
 def get_priority_neighbor(grid_canvas, row, col):
@@ -2798,7 +3219,7 @@ def orient_middle_piece(candidate_piece, reference_piece, reference_edge_id, can
 
     # Apply the same expansion and rotation process as for border pieces
     image_with_center = candidate_piece.transparent_image.copy()
-    cv2.circle(image_with_center, candidate_piece.relative_center, 2, (0, 0, 255, 255), -1)
+    # cv2.circle(image_with_center, candidate_piece.relative_center, 2, (0, 0, 255, 255), -1)
 
     (h, w) = image_with_center.shape[:2]
 
@@ -2902,7 +3323,7 @@ def orient_middle_piece(candidate_piece, reference_piece, reference_edge_id, can
         candidate_piece.final_edge_direction_map[edge_idx] = direction_idx
 
 
-# In[127]:
+# In[1136]:
 
 
 # Create a grid canvas
@@ -2917,25 +3338,10 @@ reconstruction_canvas = GridCanvas(
 )
 
 
-# In[128]:
+# In[1137]:
 
 
 def generate_vertices_spiral(grid_canvas):
-    """
-    Generate spiral traversal of vertices grid and return compact data structure.
-
-    Returns: list of dictionaries, each containing:
-    {
-        'vertex': (vertex_row, vertex_col),
-        'adjacent_cells': [
-            {'cell': (cell_row, cell_col), 'corner_dirs': (dir1, dir2)},
-            {'cell': (cell_row, cell_col), 'corner_dirs': (dir1, dir2)}
-        ]
-    }
-
-    Where corner_dirs are the two directions that meet at this corner:
-    NORTH=0, EAST=1, SOUTH=2, WEST=3
-    """
     # Vertices grid dimensions
     vertex_rows = grid_canvas.rows + 1
     vertex_cols = grid_canvas.cols + 1
@@ -3055,33 +3461,16 @@ def create_vertices_lookup(grid_canvas):
 # vertices_lookup = create_vertices_lookup(grid_canvas)
 
 
-# In[129]:
+# In[1138]:
 
 
 vertices_lookup = create_vertices_lookup(reconstruction_canvas)
 
 
-# In[130]:
+# In[1139]:
 
 
 def get_vertex_data_by_step(vertices_lookup, step_number):
-    """
-    Get vertex data for a specific step number.
-
-    Args:
-        vertices_lookup: The array returned by create_vertices_lookup()
-        step_number: Number of pieces placed (1-based, since step 0 is the first corner)
-
-    Returns:
-        Dictionary with vertex data, or None if step_number is out of range
-        Format: {
-            'vertex': (vertex_row, vertex_col),
-            'adjacent_cells': [
-                {'cell': (cell_row, cell_col), 'corner_dirs': (dir1, dir2)},
-                {'cell': (cell_row, cell_col), 'corner_dirs': (dir1, dir2)}
-            ]
-        }
-    """
     # Convert to 0-based index
     index = step_number - 1
 
@@ -3110,20 +3499,10 @@ def print_vertex_data_for_step(vertices_lookup, step_number):
         print(f"    Cell {cell_pos} corner dirs: {dirs}")
 
 
-# In[131]:
+# In[1140]:
 
 
 def get_corner_coordinate_by_direction(piece, direction_tuple):
-    """
-    Get the absolute coordinate of a corner defined by two directions.
-
-    Args:
-        piece: The puzzle piece object
-        direction_tuple: (dir1, dir2) where dirs are NORTH=0, EAST=1, SOUTH=2, WEST=3
-
-    Returns:
-        (x, y) coordinate of the corner, or None if not found
-    """
     if not hasattr(piece, 'final_edge_direction_map') or not hasattr(piece, 'rotated_corners'):
         print(f"Piece {piece.piece_id} missing orientation data")
         return None
@@ -3156,12 +3535,6 @@ def get_corner_coordinate_by_direction(piece, direction_tuple):
     return piece.rotated_corners[corner_idx]
 
 def translate_piece_to_align_corners(new_piece, new_corner_dirs, prev_piece, prev_corner_dirs):
-    """
-    Calculate translation needed to align corners of two pieces.
-
-    Returns:
-        (dx, dy) translation vector for the new piece
-    """
     # Get corner coordinates
     new_corner = get_corner_coordinate_by_direction(new_piece, new_corner_dirs)
     prev_corner = get_corner_coordinate_by_direction(prev_piece, prev_corner_dirs)
@@ -3180,7 +3553,7 @@ def translate_piece_to_align_corners(new_piece, new_corner_dirs, prev_piece, pre
     return (dx, dy)
 
 
-# In[132]:
+# In[1141]:
 
 
 import random
@@ -3205,7 +3578,8 @@ def reconstruct_puzzle(grid_canvas, my_puzzle):
 
         if counter == 0:  # Special case for (0,0)
             """_____ Place the top left corner _____"""
-            first_corner_id = random.choice(my_puzzle.corners_pieces)
+            first_corner_id = 14
+            # corner_piece = my_puzzle.all_pieces[first_corner_id]
             corner_piece = my_puzzle.all_pieces[first_corner_id]
             flat_edges = [i for i, edge in enumerate(corner_piece.edges) if edge[3] == 0]
 
@@ -3566,7 +3940,7 @@ def reconstruct_puzzle(grid_canvas, my_puzzle):
     return available_pieces
 
 
-# In[133]:
+# In[1142]:
 
 
 reconstruct_puzzle(reconstruction_canvas, my_puzzle)
@@ -3575,7 +3949,7 @@ reconstruction_canvas.print_grid()
 reconstruction_canvas.save("new_reconstruction.png")
 
 
-# In[134]:
+# In[1143]:
 
 
 # In[ ]:
